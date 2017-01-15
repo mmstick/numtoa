@@ -1,0 +1,9 @@
+[package]
+name = "numtoa"
+version = "0.0.2"
+authors = ["Michael Aaron Murphy <mmstickman@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "Convert numbers into stack-allocated byte arrays"
+repository = "https://github.com/mmstick/numtoa"
+keywords = ["numbers", "convert", "numtoa", "itoa", "no_std"]
+readme = "README.md"
