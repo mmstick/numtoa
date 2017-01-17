@@ -11,11 +11,17 @@ In addition to supporting the standard base 10 conversion, this implementation a
 your choice. Therefore, if you want a binary representation, set the base to 2. If you want hexadecimal, set the
 base to 16.
 
+## No Unsafe
+Both the standard library and itoa crate rely on unsafe functions, but this implementation has been able to avoid
+the use of unsafe entirely.
+
 > Currently, there are some optimizations being done for base 10 conversions to get it closer to the
 performance of the competing [itoa](https://github.com/dtolnay/itoa) crate when doing base 10 conversions. Itoa remains slightly faster, so there is more work to be done to match the performance.
-- std: 1,431,256,318 ns
-- numtoa: 784,711,632 ns
-- itoa: 695,028,994 ns
+```
+std:    1305559724 ns
+numtoa:  893759455 ns
+itoa:    798966077 ns
+```
 
 ## Base 10 Example
 
@@ -28,17 +34,26 @@ let mut stdout = stdout.lock();
 let mut buffer = [0u8; 20];
 
 let number: u32 = 162392;
-let mut bytes_written = number.numtoa(10, &mut buffer);
-let _ = stdout.write(&buffer[0..bytes_written]);
-assert_eq!(&buffer[0..bytes_written], "162392".as_bytes());
+let mut start_indice = number.numtoa(10, &mut buffer);
+let _ = stdout.write(&buffer[start_indice..]);
+let _ = stdout.write(b"\n");
+assert_eq!(&buffer[start_indice..], b"162392");
 
 let other_number: i32 = -6235;
-bytes_written = other_number.numtoa(10, &mut buffer);
-let _ = stdout.write(&buffer[0..bytes_written]);
-assert_eq!(&buffer[0..bytes_written], "-6235".as_bytes());
+start_indice = other_number.numtoa(10, &mut buffer);
+let _ = stdout.write(&buffer[start_indice..]);
+let _ = stdout.write(b"\n");
+assert_eq!(&buffer[start_indice..], b"-6235");
+
+let large_num: u64 = 35320842;
+start_indice = large_num.numtoa(10, &mut buffer);
+let _ = stdout.write(&buffer[start_indice..]);
+let _ = stdout.write(b"\n");
+assert_eq!(&buffer[start_indice..], b"35320842");
 
 let max_u64: u64 = 18446744073709551615;
-bytes_written = max_u64.numtoa(10, &mut buffer);
-let _ = stdout.write(&buffer[0..bytes_written]);
-assert_eq!(&buffer[0..bytes_written], "18446744073709551615".as_bytes());
+start_indice = max_u64.numtoa(10, &mut buffer);
+let _ = stdout.write(&buffer[start_indice..]);
+let _ = stdout.write(b"\n");
+assert_eq!(&buffer[start_indice..], b"18446744073709551615");
 ```
