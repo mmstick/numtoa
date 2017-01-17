@@ -1,26 +1,32 @@
 # NumToA
 
 ## `#![no_std]` Compatible with Zero Heap Allocations
+
 The standard library provides a convenient method of converting numbers into strings, but these strings are
 heap-allocated. If you have an application which needs to convert large volumes of numbers into strings, but don't
 want to pay the price of heap allocation, this crate provides an efficient `no_std`-compatible method of heaplessly converting numbers
 into their string representations, storing the representation within a reusable byte array.
 
 ## Supports Multiple Bases
+
 In addition to supporting the standard base 10 conversion, this implementation allows you to select the base of
 your choice. Therefore, if you want a binary representation, set the base to 2. If you want hexadecimal, set the
 base to 16.
 
 ## No Unsafe
+
 Both the standard library and itoa crate rely on unsafe functions, but this implementation has been able to avoid
 the use of unsafe entirely.
 
-> Currently, there are some optimizations being done for base 10 conversions to get it closer to the
-performance of the competing [itoa](https://github.com/dtolnay/itoa) crate when doing base 10 conversions. Itoa remains slightly faster, so there is more work to be done to match the performance.
+## Fast
+
+Performance is roughly identical to that of the `itoa` crate when performing base 10 conversions. Below is a benchmark
+of printing 1,000,000 through 5,000,000 to `/dev/null`
+
 ```
-std:    1305559724 ns
-numtoa:  893759455 ns
-itoa:    798966077 ns
+std:    1313015386 ns
+numtoa:  805112957 ns
+itoa:    799623465 ns
 ```
 
 ## Base 10 Example
