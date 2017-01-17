@@ -40,26 +40,26 @@ let mut stdout = stdout.lock();
 let mut buffer = [0u8; 20];
 
 let number: u32 = 162392;
-let mut start_indice = number.numtoa(10, &mut buffer);
-let _ = stdout.write(&buffer[start_indice..]);
+let mut start_index = number.numtoa(10, &mut buffer);
+let _ = stdout.write(&buffer[start_index..]);
 let _ = stdout.write(b"\n");
-assert_eq!(&buffer[start_indice..], b"162392");
+assert_eq!(&buffer[start_index..], b"162392");
 
 let other_number: i32 = -6235;
-start_indice = other_number.numtoa(10, &mut buffer);
-let _ = stdout.write(&buffer[start_indice..]);
+start_index = other_number.numtoa(10, &mut buffer);
+let _ = stdout.write(&buffer[start_index..]);
 let _ = stdout.write(b"\n");
-assert_eq!(&buffer[start_indice..], b"-6235");
+assert_eq!(&buffer[start_index..], b"-6235");
 
 let large_num: u64 = 35320842;
-start_indice = large_num.numtoa(10, &mut buffer);
-let _ = stdout.write(&buffer[start_indice..]);
+start_index = large_num.numtoa(10, &mut buffer);
+let _ = stdout.write(&buffer[start_index..]);
 let _ = stdout.write(b"\n");
-assert_eq!(&buffer[start_indice..], b"35320842");
+assert_eq!(&buffer[start_index..], b"35320842");
 
 let max_u64: u64 = 18446744073709551615;
-start_indice = max_u64.numtoa(10, &mut buffer);
-let _ = stdout.write(&buffer[start_indice..]);
+start_index = max_u64.numtoa(10, &mut buffer);
+let _ = stdout.write(&buffer[start_index..]);
 let _ = stdout.write(b"\n");
-assert_eq!(&buffer[start_indice..], b"18446744073709551615");
+assert_eq!(&buffer[start_index..], b"18446744073709551615");
 ```
