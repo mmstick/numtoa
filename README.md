@@ -21,12 +21,12 @@ the use of unsafe entirely.
 ## Fast
 
 Performance is roughly identical to that of the `itoa` crate when performing base 10 conversions. Below is a benchmark
-of printing 1,000,000 through 5,000,000 to `/dev/null`
+of printing 0 through 5,000,000 to `/dev/null`
 
 ```
-std:    1424764739 ns
-numtoa:  694285705 ns
-itoa:    665977672 ns
+std:   1150615048 ns
+itoa:   838556714 ns
+numtoa: 825544518 ns
 ```
 
 ## Base 10 Example

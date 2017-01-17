@@ -66,6 +66,7 @@
 //! ```
 
 #![no_std]
+use core::mem::size_of;
 
 /// Converts a number into a string representation, storing the conversion into a mutable byte slice.
 pub trait NumToA<T> {
@@ -75,6 +76,8 @@ pub trait NumToA<T> {
     ///
     /// # Panics
     /// If the supplied buffer is smaller than the number of bytes needed to write the integer, this will panic.
+    /// On debug builds, this function will perform a check on base 10 conversions to ensure that the input array
+    /// is large enough to hold the largest possible value in digits.
     ///
     /// # Example
     /// ```
@@ -98,9 +101,13 @@ pub trait NumToA<T> {
 const LOOKUP: &'static [u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 // A lookup table optimized for decimal lookups. Each two indices represents one possible number.
-const DEC_LOOKUP: &'static [u8; 200] = b"00010203040506070809101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475767778798081828384858687888990919293949596979899";
+const DEC_LOOKUP: &'static [u8; 200] = b"0001020304050607080910111213141516171819\
+                                         2021222324252627282930313233343536373839\
+                                         4041424344454647484950515253545556575859\
+                                         6061626364656667686970717273747576777879\
+                                         8081828384858687888990919293949596979899";
 
-macro_rules! base_10_rev {
+macro_rules! base_10 {
     ($number:ident, $index:ident, $string:ident) => {
         // Decode four characters at the same time
         while $number > 9999 {
@@ -137,6 +144,18 @@ macro_rules! impl_unsized_numtoa_for {
     ($t:ty) => {
         impl NumToA<$t> for $t {
             fn numtoa(mut self, base: $t, string: &mut [u8]) -> usize {
+                // Check if the buffer is large enough and panic on debug builds if it isn't
+                if cfg!(debug_assertions) {
+                    if base == 10 {
+                        match size_of::<$t>() {
+                            2 => debug_assert!(string.len() >= 5,  "u16 base 10 conversions require at least 5 bytes"),
+                            4 => debug_assert!(string.len() >= 10, "u32 base 10 conversions require at least 10 bytes"),
+                            8 => debug_assert!(string.len() >= 20, "u64 base 10 conversions require at least 20 bytes"),
+                            _ => unreachable!()
+                        }
+                    }
+                }
+
                 let mut index = string.len() - 1;
                 if self == 0 {
                     string[index] = b'0';
@@ -144,7 +163,8 @@ macro_rules! impl_unsized_numtoa_for {
                 }
 
                 if base == 10 {
-                    base_10_rev!(self, index, string);
+                    // Convert using optimized base 10 algorithm
+                    base_10!(self, index, string);
                 } else {
                     while self != 0 {
                         let rem = self % base;
@@ -164,6 +184,17 @@ macro_rules! impl_sized_numtoa_for {
     ($t:ty) => {
         impl NumToA<$t> for $t {
             fn numtoa(mut self, base: $t, string: &mut [u8]) -> usize {
+                if cfg!(debug_assertions) {
+                    if base == 10 {
+                        match size_of::<$t>() {
+                            2 => debug_assert!(string.len() >= 6,  "i16 base 10 conversions require at least 6 bytes"),
+                            4 => debug_assert!(string.len() >= 11, "i32 base 10 conversions require at least 11 bytes"),
+                            8 => debug_assert!(string.len() >= 20, "i64 base 10 conversions require at least 20 bytes"),
+                            _ => unreachable!()
+                        }
+                    }
+                }
+
                 let mut index = string.len() - 1;
                 let mut is_negative = false;
 
@@ -184,7 +215,8 @@ macro_rules! impl_sized_numtoa_for {
                 }
 
                 if base == 10 {
-                    base_10_rev!(self, index, string);
+                    // Convert using optimized base 10 algorithm
+                    base_10!(self, index, string);
                 } else {
                     while self != 0 {
                         let rem = self % base;
@@ -217,6 +249,12 @@ impl_unsized_numtoa_for!(usize);
 
 impl NumToA<i8> for i8 {
     fn numtoa(mut self, base: i8, string: &mut [u8]) -> usize {
+        if cfg!(debug_assertions) {
+            if base == 10 {
+                debug_assert!(string.len() >= 4, "i8 conversions need at least 4 bytes");
+            }
+        }
+
         let mut index = string.len() - 1;
         let mut is_negative = false;
 
@@ -270,6 +308,12 @@ impl NumToA<i8> for i8 {
 
 impl NumToA<u8> for u8 {
     fn numtoa(mut self, base: u8, string: &mut [u8]) -> usize {
+        if cfg!(debug_assertions) {
+            if base == 10 {
+                debug_assert!(string.len() >= 3, "u8 conversions need at least 3 bytes");
+            }
+        }
+
         let mut index = string.len() - 1;
         if self == 0 {
             string[index] = b'0';
@@ -301,4 +345,108 @@ impl NumToA<u8> for u8 {
 
         index.wrapping_add(1)
     }
+}
+
+#[test]
+#[should_panic]
+fn base10_u8_array_too_small() {
+    let mut buffer = [0u8; 2];
+    let _ = 0u8.numtoa(10, &mut buffer);
+}
+
+#[test]
+fn base10_u8_array_just_right() {
+    let mut buffer = [0u8; 3];
+    let _ = 0u8.numtoa(10, &mut buffer);
+}
+
+#[test]
+#[should_panic]
+fn base10_i8_array_too_small() {
+    let mut buffer = [0u8; 3];
+    let _ = 0i8.numtoa(10, &mut buffer);
+}
+
+#[test]
+fn base10_i8_array_just_right() {
+    let mut buffer = [0u8; 4];
+    let _ = 0i8.numtoa(10, &mut buffer);
+}
+
+#[test]
+#[should_panic]
+fn base10_i16_array_too_small() {
+    let mut buffer = [0u8; 5];
+    let _ = 0i16.numtoa(10, &mut buffer);
+}
+
+#[test]
+fn base10_i16_array_just_right() {
+    let mut buffer = [0u8; 6];
+    let _ = 0i16.numtoa(10, &mut buffer);
+}
+
+#[test]
+#[should_panic]
+fn base10_u16_array_too_small() {
+    let mut buffer = [0u8; 4];
+    let _ = 0u16.numtoa(10, &mut buffer);
+}
+
+#[test]
+fn base10_u16_array_just_right() {
+    let mut buffer = [0u8; 5];
+    let _ = 0u16.numtoa(10, &mut buffer);
+}
+
+#[test]
+#[should_panic]
+fn base10_i32_array_too_small() {
+    let mut buffer = [0u8; 10];
+    let _ = 0i32.numtoa(10, &mut buffer);
+}
+
+#[test]
+fn base10_i32_array_just_right() {
+    let mut buffer = [0u8; 11];
+    let _ = 0i32.numtoa(10, &mut buffer);
+}
+
+#[test]
+#[should_panic]
+fn base10_u32_array_too_small() {
+    let mut buffer = [0u8; 9];
+    let _ = 0u32.numtoa(10, &mut buffer);
+}
+
+#[test]
+fn base10_u32_array_just_right() {
+    let mut buffer = [0u8; 10];
+    let _ = 0u32.numtoa(10, &mut buffer);
+}
+
+#[test]
+#[should_panic]
+fn base10_i64_array_too_small() {
+    let mut buffer = [0u8; 19];
+    let _ = 0i64.numtoa(10, &mut buffer);
+}
+
+#[test]
+fn base10_i64_array_just_right() {
+    let mut buffer = [0u8; 20];
+    let _ = 0i64.numtoa(10, &mut buffer);
+}
+
+#[test]
+#[should_panic]
+fn base10_u64_array_too_small() {
+    let mut buffer = [0u8; 19];
+    let _ = 0u64.numtoa(10, &mut buffer);
+}
+
+#[test]
+fn base10_u64_array_just_right() {
+    let mut buffer = [0u8; 20];
+    let _ = 0u64.numtoa(10, &mut buffer);
 }
