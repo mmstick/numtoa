@@ -28,6 +28,18 @@
 //! let _ = stdout.write(b"\n");
 //! assert_eq!(&buffer[start_indice..], b"-6235");
 //!
+//! let other_number: i16 = -256;
+//! start_indice = other_number.numtoa(10, &mut buffer);
+//! let _ = stdout.write(&buffer[start_indice..]);
+//! let _ = stdout.write(b"\n");
+//! assert_eq!(&buffer[start_indice..], b"-256");
+//!
+//! let other_number: i16 = -32768;
+//! start_indice = other_number.numtoa(10, &mut buffer);
+//! let _ = stdout.write(&buffer[start_indice..]);
+//! let _ = stdout.write(b"\n");
+//! assert_eq!(&buffer[start_indice..], b"-32768");
+//!
 //! let large_num: u64 = 35320842;
 //! start_indice = large_num.numtoa(10, &mut buffer);
 //! let _ = stdout.write(&buffer[start_indice..]);
@@ -95,8 +107,8 @@ macro_rules! base_10_rev {
             $index = $index.wrapping_sub(4);
         } else if $number > 99 {
             let section = ($number / 10) as usize * 2;
-            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[section..section+2]);
-            $string[$index-2] = LOOKUP[($number % 10) as usize];
+            $string[$index-2..$index].copy_from_slice(&DEC_LOOKUP[section..section+2]);
+            $string[$index] = LOOKUP[($number % 10) as usize];
             $index = $index.wrapping_sub(3);
         } else if $number > 9 {
             $string[$index-1] = LOOKUP[($number / 10) as usize];
@@ -145,7 +157,15 @@ macro_rules! impl_sized_numtoa_for {
 
                 if self < 0 {
                     is_negative = true;
-                    self = self.abs();
+                    self = match self.checked_abs() {
+                        Some(value) => value,
+                        None        => {
+                            let value = <$t>::max_value();
+                            string[index] = LOOKUP[(value % 10 + 1) as usize];
+                            index -= 1;
+                            value / 10
+                        }
+                    };
                 } else if self == 0 {
                     string[index] = b'0';
                     return index;
@@ -190,7 +210,15 @@ impl NumToA<i8> for i8 {
 
         if self < 0 {
             is_negative = true;
-            self = self.abs();
+            self = match self.checked_abs() {
+                Some(value) => value,
+                None        => {
+                    let value = <i8>::max_value();
+                    string[index] = LOOKUP[(value % 10 + 1) as usize];
+                    index -= 1;
+                    value / 10
+                }
+            };
         } else if self == 0 {
             string[index] = b'0';
             return index;
