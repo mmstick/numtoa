@@ -28,6 +28,18 @@
 //! let _ = stdout.write(b"\n");
 //! assert_eq!(&buffer[start_indice..], b"-6235");
 //!
+//! let other_number: i8 = -128;
+//! start_indice = other_number.numtoa(10, &mut buffer);
+//! let _ = stdout.write(&buffer[start_indice..]);
+//! let _ = stdout.write(b"\n");
+//! assert_eq!(&buffer[start_indice..], b"-128");
+//!
+//! let other_number: i8 = 53;
+//! start_indice = other_number.numtoa(10, &mut buffer);
+//! let _ = stdout.write(&buffer[start_indice..]);
+//! let _ = stdout.write(b"\n");
+//! assert_eq!(&buffer[start_indice..], b"53");
+//!
 //! let other_number: i16 = -256;
 //! start_indice = other_number.numtoa(10, &mut buffer);
 //! let _ = stdout.write(&buffer[start_indice..]);
@@ -111,8 +123,8 @@ macro_rules! base_10_rev {
             $string[$index] = LOOKUP[($number % 10) as usize];
             $index = $index.wrapping_sub(3);
         } else if $number > 9 {
-            $string[$index-1] = LOOKUP[($number as u8 / 10) as usize];
-            $string[$index]   = LOOKUP[($number as u8 % 10) as usize];
+            $number *= 2;
+            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[$number as usize..$number as usize+2]);
             $index = $index.wrapping_sub(2);
         } else {
             $string[$index] = LOOKUP[$number as usize];
@@ -224,11 +236,27 @@ impl NumToA<i8> for i8 {
             return index;
         }
 
-        while self != 0 {
-            let rem = self % base;
-            string[index] = LOOKUP[rem as usize];
-            index = index.wrapping_sub(1);
-            self /= base;
+        if base == 10 {
+            if self > 99 {
+                let section = (self / 10) * 2;
+                string[index-2..index].copy_from_slice(&DEC_LOOKUP[section as usize..section as usize+2]);
+                string[index] = LOOKUP[(self % 10) as usize];
+                index = index.wrapping_sub(3);
+            } else if self > 9 {
+                self *= 2;
+                string[index-1..index+1].copy_from_slice(&DEC_LOOKUP[self as usize..self as usize+2]);
+                index = index.wrapping_sub(2);
+            } else {
+                string[index] = LOOKUP[self as usize];
+                index = index.wrapping_sub(1);
+            }
+        } else {
+            while self != 0 {
+                let rem = self % base;
+                string[index] = LOOKUP[rem as usize];
+                index = index.wrapping_sub(1);
+                self /= base;
+            }
         }
 
         if is_negative {
@@ -248,11 +276,27 @@ impl NumToA<u8> for u8 {
             return index;
         }
 
-        while self != 0 {
-            let rem = self % base;
-            string[index] = LOOKUP[rem as usize];
-            index = index.wrapping_sub(1);
-            self /= base;
+        if base == 10 {
+            if self > 99 {
+                let section = (self / 10) * 2;
+                string[index-2..index].copy_from_slice(&DEC_LOOKUP[section as usize..section as usize+2]);
+                string[index] = LOOKUP[(self % 10) as usize];
+                index = index.wrapping_sub(3);
+            } else if self > 9 {
+                self *= 2;
+                string[index-1..index+1].copy_from_slice(&DEC_LOOKUP[self as usize..self as usize+2]);
+                index = index.wrapping_sub(2);
+            } else {
+                string[index] = LOOKUP[self as usize];
+                index = index.wrapping_sub(1);
+            }
+        } else {
+            while self != 0 {
+                let rem = self % base;
+                string[index] = LOOKUP[rem as usize];
+                index = index.wrapping_sub(1);
+                self /= base;
+            }
         }
 
         index.wrapping_add(1)
