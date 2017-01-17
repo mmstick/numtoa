@@ -73,68 +73,30 @@ pub trait NumToA<T> {
 // The value of the remainder of each step will be used as the index
 const LOOKUP: &'static [u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-macro_rules! base_10 {
-    ($number:ident, $index:ident, $string:ident) => {
-        // Decode four characters at the same time
-        while $number > 9999 {
-            let rem = $number % 10000;
-            $string[$index+3] = LOOKUP[(rem / 1000) as usize];
-            $string[$index+2] = LOOKUP[(rem % 1000 / 100) as usize];
-            $string[$index+1] = LOOKUP[(rem % 100 / 10) as usize];
-            $string[$index]   = LOOKUP[(rem % 10) as usize];
-            $index += 4;
-            $number /= 10000;
-        }
-
-        if $number > 999 {
-            let rem = $number % 1000;
-            $string[$index+3] = LOOKUP[($number / 1000) as usize];
-            $string[$index+2] = LOOKUP[(rem / 100) as usize];
-            $string[$index+1] = LOOKUP[(rem % 100 / 10) as usize];
-            $string[$index]   = LOOKUP[(rem % 10) as usize];
-            $index += 4;
-        } else if $number > 99 {
-            let rem = $number % 100;
-            $string[$index+2] = LOOKUP[($number / 100) as usize];
-            $string[$index+1] = LOOKUP[(rem / 10) as usize];
-            $string[$index]   = LOOKUP[(rem % 10) as usize];
-            $index += 3;
-        } else if $number > 9 {
-            $string[$index+1] = LOOKUP[($number / 10) as usize];
-            $string[$index]   = LOOKUP[($number % 10) as usize];
-            $index += 2;
-        } else {
-            $string[$index] = LOOKUP[$number as usize];
-            $index += 1;
-        }
-    }
-}
+// A lookup table optimized for decimal lookups. Each two indices represents one possible number.
+const DEC_LOOKUP: &'static [u8; 200] = b"00010203040506070809101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475767778798081828384858687888990919293949596979899";
 
 macro_rules! base_10_rev {
     ($number:ident, $index:ident, $string:ident) => {
         // Decode four characters at the same time
         while $number > 9999 {
             let rem = $number % 10000;
-            $string[$index-3] = LOOKUP[(rem / 1000) as usize];
-            $string[$index-2] = LOOKUP[(rem % 1000 / 100) as usize];
-            $string[$index-1] = LOOKUP[(rem % 100 / 10) as usize];
-            $string[$index]   = LOOKUP[(rem % 10) as usize];
+            let (first_section, second_section) = ((rem / 100) as usize * 2, (rem % 100) as usize * 2);
+            $string[$index-3..$index-1].clone_from_slice(&DEC_LOOKUP[first_section..first_section+2]);
+            $string[$index-1..$index+1].clone_from_slice(&DEC_LOOKUP[second_section..second_section+2]);
             $index = $index.wrapping_sub(4);
             $number /= 10000;
         }
 
         if $number > 999 {
-            let rem = $number % 1000;
-            $string[$index-3] = LOOKUP[($number / 1000) as usize];
-            $string[$index-2] = LOOKUP[(rem / 100) as usize];
-            $string[$index-1] = LOOKUP[(rem % 100 / 10) as usize];
-            $string[$index]   = LOOKUP[(rem % 10) as usize];
+            let (first_section, second_section) = (($number / 100) as usize * 2, ($number % 100) as usize * 2);
+            $string[$index-3..$index-1].clone_from_slice(&DEC_LOOKUP[first_section..first_section+2]);
+            $string[$index-1..$index+1].clone_from_slice(&DEC_LOOKUP[second_section..second_section+2]);
             $index = $index.wrapping_sub(4);
         } else if $number > 99 {
-            let rem = $number % 100;
-            $string[$index-2] = LOOKUP[($number / 100) as usize];
-            $string[$index-1] = LOOKUP[(rem / 10) as usize];
-            $string[$index]   = LOOKUP[(rem % 10) as usize];
+            let section = ($number / 10) as usize * 2;
+            $string[$index-1..$index+1].clone_from_slice(&DEC_LOOKUP[section..section+2]);
+            $string[$index-2] = LOOKUP[($number % 10) as usize];
             $index = $index.wrapping_sub(3);
         } else if $number > 9 {
             $string[$index-1] = LOOKUP[($number / 10) as usize];
