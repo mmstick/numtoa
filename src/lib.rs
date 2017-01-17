@@ -140,7 +140,7 @@ macro_rules! base_10 {
     }
 }
 
-macro_rules! impl_unsized_numtoa_for {
+macro_rules! impl_unsigned_numtoa_for {
     ($t:ty) => {
         impl NumToA<$t> for $t {
             fn numtoa(mut self, base: $t, string: &mut [u8]) -> usize {
@@ -180,7 +180,7 @@ macro_rules! impl_unsized_numtoa_for {
     }
 }
 
-macro_rules! impl_sized_numtoa_for {
+macro_rules! impl_signed_numtoa_for {
     ($t:ty) => {
         impl NumToA<$t> for $t {
             fn numtoa(mut self, base: $t, string: &mut [u8]) -> usize {
@@ -198,7 +198,7 @@ macro_rules! impl_sized_numtoa_for {
                 let mut index = string.len() - 1;
                 let mut is_negative = false;
 
-                if self < 0 {
+                if self < 0 && base == 10 {
                     is_negative = true;
                     self = match self.checked_abs() {
                         Some(value) => value,
@@ -217,6 +217,10 @@ macro_rules! impl_sized_numtoa_for {
                 if base == 10 {
                     // Convert using optimized base 10 algorithm
                     base_10!(self, index, string);
+                    if is_negative {
+                        string[index] = b'-';
+                        index -= 1;
+                    }
                 } else {
                     while self != 0 {
                         let rem = self % base;
@@ -226,11 +230,6 @@ macro_rules! impl_sized_numtoa_for {
                     }
                 }
 
-                if is_negative {
-                    string[index] = b'-';
-                    index -= 1;
-                }
-
                 index.wrapping_add(1)
             }
         }
@@ -238,27 +237,31 @@ macro_rules! impl_sized_numtoa_for {
     }
 }
 
-impl_sized_numtoa_for!(i16);
-impl_sized_numtoa_for!(i32);
-impl_sized_numtoa_for!(i64);
-impl_sized_numtoa_for!(isize);
-impl_unsized_numtoa_for!(u16);
-impl_unsized_numtoa_for!(u32);
-impl_unsized_numtoa_for!(u64);
-impl_unsized_numtoa_for!(usize);
+impl_signed_numtoa_for!(i16);
+impl_signed_numtoa_for!(i32);
+impl_signed_numtoa_for!(i64);
+impl_signed_numtoa_for!(isize);
+impl_unsigned_numtoa_for!(u16);
+impl_unsigned_numtoa_for!(u32);
+impl_unsigned_numtoa_for!(u64);
+impl_unsigned_numtoa_for!(usize);
 
 impl NumToA<i8> for i8 {
     fn numtoa(mut self, base: i8, string: &mut [u8]) -> usize {
         if cfg!(debug_assertions) {
-            if base == 10 {
-                debug_assert!(string.len() >= 4, "i8 conversions need at least 4 bytes");
+            match base {
+                2  => debug_assert!(string.len() >= 8, "i8 base 2 conversions need at least 8 bytes"),
+                8  => debug_assert!(string.len() >= 3, "i8 base 8 conversions need at least 3 bytes"),
+                10 => debug_assert!(string.len() >= 4, "i8 base 10 conversions need at least 4 bytes"),
+                16 => debug_assert!(string.len() >= 2, "i8 base 16 conversions need at least 2 bytes"),
+                _ => ()
             }
         }
 
         let mut index = string.len() - 1;
         let mut is_negative = false;
 
-        if self < 0 {
+        if self < 0 && base == 10 {
             is_negative = true;
             self = match self.checked_abs() {
                 Some(value) => value,
@@ -288,6 +291,11 @@ impl NumToA<i8> for i8 {
                 string[index] = LOOKUP[self as usize];
                 index = index.wrapping_sub(1);
             }
+
+            if is_negative {
+                string[index] = b'-';
+                index -= 1;
+            }
         } else {
             while self != 0 {
                 let rem = self % base;
@@ -297,11 +305,6 @@ impl NumToA<i8> for i8 {
             }
         }
 
-        if is_negative {
-            string[index] = b'-';
-            index -= 1;
-        }
-
         index.wrapping_add(1)
     }
 }
@@ -309,8 +312,12 @@ impl NumToA<i8> for i8 {
 impl NumToA<u8> for u8 {
     fn numtoa(mut self, base: u8, string: &mut [u8]) -> usize {
         if cfg!(debug_assertions) {
-            if base == 10 {
-                debug_assert!(string.len() >= 3, "u8 conversions need at least 3 bytes");
+            match base {
+                2  => debug_assert!(string.len() >= 8, "u8 base 2 conversions need at least 8 bytes"),
+                8  => debug_assert!(string.len() >= 3, "u8 base 8 conversions need at least 3 bytes"),
+                10 => debug_assert!(string.len() >= 3, "u8 base 10 conversions need at least 3 bytes"),
+                16 => debug_assert!(string.len() >= 2, "u8 base 16 conversions need at least 2 bytes"),
+                _ => ()
             }
         }
 
