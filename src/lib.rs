@@ -82,20 +82,20 @@ macro_rules! base_10_rev {
         while $number > 9999 {
             let rem = $number % 10000;
             let (first_section, second_section) = ((rem / 100) as usize * 2, (rem % 100) as usize * 2);
-            $string[$index-3..$index-1].clone_from_slice(&DEC_LOOKUP[first_section..first_section+2]);
-            $string[$index-1..$index+1].clone_from_slice(&DEC_LOOKUP[second_section..second_section+2]);
+            $string[$index-3..$index-1].copy_from_slice(&DEC_LOOKUP[first_section..first_section+2]);
+            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[second_section..second_section+2]);
             $index = $index.wrapping_sub(4);
             $number /= 10000;
         }
 
         if $number > 999 {
             let (first_section, second_section) = (($number / 100) as usize * 2, ($number % 100) as usize * 2);
-            $string[$index-3..$index-1].clone_from_slice(&DEC_LOOKUP[first_section..first_section+2]);
-            $string[$index-1..$index+1].clone_from_slice(&DEC_LOOKUP[second_section..second_section+2]);
+            $string[$index-3..$index-1].copy_from_slice(&DEC_LOOKUP[first_section..first_section+2]);
+            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[second_section..second_section+2]);
             $index = $index.wrapping_sub(4);
         } else if $number > 99 {
             let section = ($number / 10) as usize * 2;
-            $string[$index-1..$index+1].clone_from_slice(&DEC_LOOKUP[section..section+2]);
+            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[section..section+2]);
             $string[$index-2] = LOOKUP[($number % 10) as usize];
             $index = $index.wrapping_sub(3);
         } else if $number > 9 {

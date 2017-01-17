@@ -24,9 +24,9 @@ Performance is roughly identical to that of the `itoa` crate when performing bas
 of printing 1,000,000 through 5,000,000 to `/dev/null`
 
 ```
-std:    1313015386 ns
-numtoa:  805112957 ns
-itoa:    799623465 ns
+std:    1424764739 ns
+numtoa:  694285705 ns
+itoa:    665977672 ns
 ```
 
 ## Base 10 Example
