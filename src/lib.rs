@@ -107,33 +107,39 @@ const DEC_LOOKUP: &'static [u8; 200] = b"000102030405060708091011121314151617181
                                          6061626364656667686970717273747576777879\
                                          8081828384858687888990919293949596979899";
 
+// A tri decimal lookup costs 4K of memory for a 4% boost in performance
+const DEC_TRI_LOOKUP:  &'static [u8] = include_bytes!("base10_triples");
+
+// A quad decimal lookup costs 40K of memory for another 4% boost. Worth it? Sure?
+const DEC_QUAD_LOOKUP: &'static [u8] = include_bytes!("base10_quads");
+
 macro_rules! base_10 {
     ($number:ident, $index:ident, $string:ident) => {
-        // Decode four characters at the same time
+        // Decode four digits at the same time via a quad decimal lookup
         while $number > 9999 {
-            let rem = ($number % 10000) as u16;
-            let (frst, scnd) = ((rem / 100) * 2, (rem % 100) * 2);
-            $string[$index-3..$index-1].copy_from_slice(&DEC_LOOKUP[frst as usize..frst as usize+2]);
-            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[scnd as usize..scnd as usize+2]);
+            let rem = ($number % 10000) as u16 * 4;
+            $string[$index-3..$index+1].copy_from_slice(&DEC_QUAD_LOOKUP[rem as usize..(rem+4) as usize]);
             $index = $index.wrapping_sub(4);
             $number /= 10000;
         }
 
         if $number > 999 {
-            let (frst, scnd) = (($number / 100) * 2, ($number % 100) * 2);
-            $string[$index-3..$index-1].copy_from_slice(&DEC_LOOKUP[frst as usize..frst as usize+2]);
-            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[scnd as usize..scnd as usize+2]);
+            // Decodes four digits at the same time using a quad decimal lookup
+            $number *= 4;
+            $string[$index-3..$index+1].copy_from_slice(&DEC_QUAD_LOOKUP[$number as usize..($number + 4) as usize]);
             $index = $index.wrapping_sub(4);
         } else if $number > 99 {
-            let section = ($number as u16 / 10) * 2;
-            $string[$index-2..$index].copy_from_slice(&DEC_LOOKUP[section as usize..section as usize+2]);
-            $string[$index] = LOOKUP[($number % 10) as usize];
+            // Decodes three digits at the same time using a tri decimal lookup
+            $number *= 3;
+            $string[$index-2..$index+1].copy_from_slice(&DEC_TRI_LOOKUP[$number as usize..($number + 3) as usize]);
             $index = $index.wrapping_sub(3);
         } else if $number > 9 {
+            // Decodes two digits at the same time using a duo decimal lookup
             $number *= 2;
-            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[$number as usize..$number as usize+2]);
+            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[$number as usize..($number + 2) as usize]);
             $index = $index.wrapping_sub(2);
         } else {
+            // Decodes the last digit using a basic lookup table
             $string[$index] = LOOKUP[$number as usize];
             $index = $index.wrapping_sub(1);
         }
@@ -160,9 +166,7 @@ macro_rules! impl_unsigned_numtoa_for {
                 if self == 0 {
                     string[index] = b'0';
                     return index;
-                }
-
-                if base == 10 {
+                } else if base == 10 {
                     // Convert using optimized base 10 algorithm
                     base_10!(self, index, string);
                 } else {
@@ -279,15 +283,17 @@ impl NumToA<i8> for i8 {
 
         if base == 10 {
             if self > 99 {
-                let section = (self / 10) * 2;
-                string[index-2..index].copy_from_slice(&DEC_LOOKUP[section as usize..section as usize+2]);
-                string[index] = LOOKUP[(self % 10) as usize];
+                // Decodes three digits at the same time using a tri decimal lookup
+                let id = self as u16 * 3;
+                string[index-2..index+1].copy_from_slice(&DEC_TRI_LOOKUP[id as usize..(id + 3) as usize]);
                 index = index.wrapping_sub(3);
             } else if self > 9 {
+                // Decodes two digits at the same time using a duo decimal lookup
                 self *= 2;
                 string[index-1..index+1].copy_from_slice(&DEC_LOOKUP[self as usize..self as usize+2]);
                 index = index.wrapping_sub(2);
             } else {
+                // Decodes the single-digit number with a basic lookup
                 string[index] = LOOKUP[self as usize];
                 index = index.wrapping_sub(1);
             }
@@ -329,15 +335,17 @@ impl NumToA<u8> for u8 {
 
         if base == 10 {
             if self > 99 {
-                let section = (self / 10) * 2;
-                string[index-2..index].copy_from_slice(&DEC_LOOKUP[section as usize..section as usize+2]);
-                string[index] = LOOKUP[(self % 10) as usize];
+                // Decodes three digits at the same time using a tri decimal lookup
+                let id = self as u16 * 3;
+                string[index-2..index+1].copy_from_slice(&DEC_TRI_LOOKUP[id as usize..(id + 3) as usize]);
                 index = index.wrapping_sub(3);
             } else if self > 9 {
+                // Decodes two digits at the same time using a duo decimal lookup
                 self *= 2;
                 string[index-1..index+1].copy_from_slice(&DEC_LOOKUP[self as usize..self as usize+2]);
                 index = index.wrapping_sub(2);
             } else {
+                // Decodes the single-digit number with a basic lookup
                 string[index] = LOOKUP[self as usize];
                 index = index.wrapping_sub(1);
             }

@@ -20,13 +20,21 @@ the use of unsafe entirely.
 
 ## Fast
 
-Performance is roughly identical to that of the `itoa` crate when performing base 10 conversions. Below is a benchmark
-of printing 0 through 5,000,000 to `/dev/null`
+Performance is roughly 8% better than the `itoa` crate when performing base 10 conversions.
+Much of the performance is due to utilizing digit lookup tables in memory. There is a basic single-digit lookup table
+that is shared by all base conversions, a decimal-exclusive double digit lookup table, a decimal-exclusive triple digit
+lookup table, and finally a decimal-exclusive quad-digit lookup table. The `itoa` crate does not feature a triple or
+quad digit lookup table, and it is these two that give `numtoa` the 8% advantage. It does, however, come at a memory
+cost. A triple digit lookup table costs 4K of memory and a quad digit lookup table costs 40K of memory. Is 44K of
+additional memory worth it for the increased integer conversion rates? You tell me.
+
+Below is a benchmark of printing 0 through 100,000,000 to `/dev/null`
 
 ```
-std:   1150615048 ns
-itoa:   838556714 ns
-numtoa: 825544518 ns
+numtoa: 14592 ms
+itoa:   16020 ms
+std:    22252 ms
+
 ```
 
 ## Base 10 Example
