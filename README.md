@@ -21,20 +21,50 @@ the use of unsafe entirely.
 ## Fast
 
 Performance is roughly 8% better than the `itoa` crate when performing base 10 conversions.
-Much of the performance is due to utilizing digit lookup tables in memory. There is a basic single-digit lookup table
-that is shared by all base conversions, a decimal-exclusive double digit lookup table, a decimal-exclusive triple digit
-lookup table, and finally a decimal-exclusive quad-digit lookup table. The `itoa` crate does not feature a triple or
-quad digit lookup table, and it is these two that give `numtoa` the 8% advantage. It does, however, come at a memory
-cost. A triple digit lookup table costs 4K of memory and a quad digit lookup table costs 40K of memory. Is 44K of
-additional memory worth it for the increased integer conversion rates? You tell me.
-
 Below is a benchmark of printing 0 through 100,000,000 to `/dev/null`
 
 ```
 numtoa: 14592 ms
 itoa:   16020 ms
 std:    22252 ms
+```
 
+## How Base 10 Conversion Works
+
+For all integers above the 8-bit size (`u8`/`i8`), integers will be repeatedly divided by `10_000` until they are
+no longer divisible by `10_000`. Before dividing each successive number by `10_000`, the remainder of each number
+is calculated by getting the modulo of `10_000` with the modulus operator.
+
+> If the number is equal to 1532626
+
+> number % 10_000 == 2626
+
+> number / 10_000 == 153
+
+To convert these values into their character representations, this is when a lookup table comes into play. There are
+four possible lookup tables for base 10 conversions: single-digit, double-digit, triple-digit, and quad-digit. Each
+remainder of a division by `10_000` will use a quad-digit lookup table, which converts the value into the index
+where that value is located at.
+
+> 2626 value * 4 digits = 10504 index location
+
+Once we have the starting index location, we can perform a `memcpy` using Rust's safe `copy_from_slice` method,
+writing into our provided byte array in reverse.
+
+```rust
+string[index-3..index+1].copy_from_slice(&DEC_QUAD_LOOKUP[number..number+4])
+```
+Once the value of the number is less than `10_000`, we get the last N digits by using either the single-digit,
+double-digit, or triple-digit lookup by comparing the value of the final number. If the number is greater than 99,
+use the triple-digit lookup; else if it is greater than 9, use the double-digit lookup; and finally use a single-digit
+lookup.
+
+By the time the process is finished, we will have the value indicating where in the array that the text-representation
+starts. This number is then used in the creation of a slice of the underlying array.
+
+```rust
+let index = 125235.numtoa(10, &mut buffer);
+let _ = stdout.write(buffer[index..]);
 ```
 
 ## Base 10 Example
