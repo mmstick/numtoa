@@ -107,46 +107,40 @@ const DEC_LOOKUP: &'static [u8; 200] = b"000102030405060708091011121314151617181
                                          6061626364656667686970717273747576777879\
                                          8081828384858687888990919293949596979899";
 
-// A tri decimal lookup costs 4K of memory for a 4% boost in performance
-const DEC_TRI_LOOKUP:  &'static [u8] = include_bytes!("base10_triples");
-
-// A quad decimal lookup costs 40K of memory for another 4% boost. Worth it? Sure?
-const DEC_QUAD_LOOKUP: &'static [u8] = include_bytes!("base10_quads");
-
 macro_rules! base_10 {
     ($number:ident, $index:ident, $string:ident) => {
-        // Decode four digits at the same time via a quad decimal lookup
+        // Decode four characters at the same time
         while $number > 9999 {
-            let rem = ($number % 10000) as u16 * 4;
-            $string[$index-3..$index+1].copy_from_slice(&DEC_QUAD_LOOKUP[rem as usize..(rem+4) as usize]);
+            let rem = ($number % 10000) as u16;
+            let (frst, scnd) = ((rem / 100) * 2, (rem % 100) * 2);
+            $string[$index-3..$index-1].copy_from_slice(&DEC_LOOKUP[frst as usize..frst as usize+2]);
+            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[scnd as usize..scnd as usize+2]);
             $index = $index.wrapping_sub(4);
             $number /= 10000;
         }
 
         if $number > 999 {
-            // Decodes four digits at the same time using a quad decimal lookup
-            $number *= 4;
-            $string[$index-3..$index+1].copy_from_slice(&DEC_QUAD_LOOKUP[$number as usize..($number + 4) as usize]);
+            let (frst, scnd) = (($number / 100) * 2, ($number % 100) * 2);
+            $string[$index-3..$index-1].copy_from_slice(&DEC_LOOKUP[frst as usize..frst as usize+2]);
+            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[scnd as usize..scnd as usize+2]);
             $index = $index.wrapping_sub(4);
         } else if $number > 99 {
-            // Decodes three digits at the same time using a tri decimal lookup
-            $number *= 3;
-            $string[$index-2..$index+1].copy_from_slice(&DEC_TRI_LOOKUP[$number as usize..($number + 3) as usize]);
+            let section = ($number as u16 / 10) * 2;
+            $string[$index-2..$index].copy_from_slice(&DEC_LOOKUP[section as usize..section as usize+2]);
+            $string[$index] = LOOKUP[($number % 10) as usize];
             $index = $index.wrapping_sub(3);
         } else if $number > 9 {
-            // Decodes two digits at the same time using a duo decimal lookup
             $number *= 2;
-            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[$number as usize..($number + 2) as usize]);
+            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[$number as usize..$number as usize+2]);
             $index = $index.wrapping_sub(2);
         } else {
-            // Decodes the last digit using a basic lookup table
             $string[$index] = LOOKUP[$number as usize];
             $index = $index.wrapping_sub(1);
         }
     }
 }
 
-macro_rules! impl_unsigned_numtoa_for {
+macro_rules! impl_unsized_numtoa_for {
     ($t:ty) => {
         impl NumToA<$t> for $t {
             fn numtoa(mut self, base: $t, string: &mut [u8]) -> usize {
@@ -166,7 +160,9 @@ macro_rules! impl_unsigned_numtoa_for {
                 if self == 0 {
                     string[index] = b'0';
                     return index;
-                } else if base == 10 {
+                }
+
+                if base == 10 {
                     // Convert using optimized base 10 algorithm
                     base_10!(self, index, string);
                 } else {
@@ -184,7 +180,7 @@ macro_rules! impl_unsigned_numtoa_for {
     }
 }
 
-macro_rules! impl_signed_numtoa_for {
+macro_rules! impl_sized_numtoa_for {
     ($t:ty) => {
         impl NumToA<$t> for $t {
             fn numtoa(mut self, base: $t, string: &mut [u8]) -> usize {
@@ -202,7 +198,7 @@ macro_rules! impl_signed_numtoa_for {
                 let mut index = string.len() - 1;
                 let mut is_negative = false;
 
-                if self < 0 && base == 10 {
+                if self < 0 {
                     is_negative = true;
                     self = match self.checked_abs() {
                         Some(value) => value,
@@ -221,10 +217,6 @@ macro_rules! impl_signed_numtoa_for {
                 if base == 10 {
                     // Convert using optimized base 10 algorithm
                     base_10!(self, index, string);
-                    if is_negative {
-                        string[index] = b'-';
-                        index -= 1;
-                    }
                 } else {
                     while self != 0 {
                         let rem = self % base;
@@ -234,6 +226,11 @@ macro_rules! impl_signed_numtoa_for {
                     }
                 }
 
+                if is_negative {
+                    string[index] = b'-';
+                    index -= 1;
+                }
+
                 index.wrapping_add(1)
             }
         }
@@ -241,31 +238,27 @@ macro_rules! impl_signed_numtoa_for {
     }
 }
 
-impl_signed_numtoa_for!(i16);
-impl_signed_numtoa_for!(i32);
-impl_signed_numtoa_for!(i64);
-impl_signed_numtoa_for!(isize);
-impl_unsigned_numtoa_for!(u16);
-impl_unsigned_numtoa_for!(u32);
-impl_unsigned_numtoa_for!(u64);
-impl_unsigned_numtoa_for!(usize);
+impl_sized_numtoa_for!(i16);
+impl_sized_numtoa_for!(i32);
+impl_sized_numtoa_for!(i64);
+impl_sized_numtoa_for!(isize);
+impl_unsized_numtoa_for!(u16);
+impl_unsized_numtoa_for!(u32);
+impl_unsized_numtoa_for!(u64);
+impl_unsized_numtoa_for!(usize);
 
 impl NumToA<i8> for i8 {
     fn numtoa(mut self, base: i8, string: &mut [u8]) -> usize {
         if cfg!(debug_assertions) {
-            match base {
-                2  => debug_assert!(string.len() >= 8, "i8 base 2 conversions need at least 8 bytes"),
-                8  => debug_assert!(string.len() >= 3, "i8 base 8 conversions need at least 3 bytes"),
-                10 => debug_assert!(string.len() >= 4, "i8 base 10 conversions need at least 4 bytes"),
-                16 => debug_assert!(string.len() >= 2, "i8 base 16 conversions need at least 2 bytes"),
-                _ => ()
+            if base == 10 {
+                debug_assert!(string.len() >= 4, "i8 conversions need at least 4 bytes");
             }
         }
 
         let mut index = string.len() - 1;
         let mut is_negative = false;
 
-        if self < 0 && base == 10 {
+        if self < 0 {
             is_negative = true;
             self = match self.checked_abs() {
                 Some(value) => value,
@@ -283,24 +276,17 @@ impl NumToA<i8> for i8 {
 
         if base == 10 {
             if self > 99 {
-                // Decodes three digits at the same time using a tri decimal lookup
-                let id = self as u16 * 3;
-                string[index-2..index+1].copy_from_slice(&DEC_TRI_LOOKUP[id as usize..(id + 3) as usize]);
+                let section = (self / 10) * 2;
+                string[index-2..index].copy_from_slice(&DEC_LOOKUP[section as usize..section as usize+2]);
+                string[index] = LOOKUP[(self % 10) as usize];
                 index = index.wrapping_sub(3);
             } else if self > 9 {
-                // Decodes two digits at the same time using a duo decimal lookup
                 self *= 2;
                 string[index-1..index+1].copy_from_slice(&DEC_LOOKUP[self as usize..self as usize+2]);
                 index = index.wrapping_sub(2);
             } else {
-                // Decodes the single-digit number with a basic lookup
                 string[index] = LOOKUP[self as usize];
                 index = index.wrapping_sub(1);
-            }
-
-            if is_negative {
-                string[index] = b'-';
-                index -= 1;
             }
         } else {
             while self != 0 {
@@ -311,6 +297,11 @@ impl NumToA<i8> for i8 {
             }
         }
 
+        if is_negative {
+            string[index] = b'-';
+            index -= 1;
+        }
+
         index.wrapping_add(1)
     }
 }
@@ -318,12 +309,8 @@ impl NumToA<i8> for i8 {
 impl NumToA<u8> for u8 {
     fn numtoa(mut self, base: u8, string: &mut [u8]) -> usize {
         if cfg!(debug_assertions) {
-            match base {
-                2  => debug_assert!(string.len() >= 8, "u8 base 2 conversions need at least 8 bytes"),
-                8  => debug_assert!(string.len() >= 3, "u8 base 8 conversions need at least 3 bytes"),
-                10 => debug_assert!(string.len() >= 3, "u8 base 10 conversions need at least 3 bytes"),
-                16 => debug_assert!(string.len() >= 2, "u8 base 16 conversions need at least 2 bytes"),
-                _ => ()
+            if base == 10 {
+                debug_assert!(string.len() >= 3, "u8 conversions need at least 3 bytes");
             }
         }
 
@@ -335,17 +322,15 @@ impl NumToA<u8> for u8 {
 
         if base == 10 {
             if self > 99 {
-                // Decodes three digits at the same time using a tri decimal lookup
-                let id = self as u16 * 3;
-                string[index-2..index+1].copy_from_slice(&DEC_TRI_LOOKUP[id as usize..(id + 3) as usize]);
+                let section = (self / 10) * 2;
+                string[index-2..index].copy_from_slice(&DEC_LOOKUP[section as usize..section as usize+2]);
+                string[index] = LOOKUP[(self % 10) as usize];
                 index = index.wrapping_sub(3);
             } else if self > 9 {
-                // Decodes two digits at the same time using a duo decimal lookup
                 self *= 2;
                 string[index-1..index+1].copy_from_slice(&DEC_LOOKUP[self as usize..self as usize+2]);
                 index = index.wrapping_sub(2);
             } else {
-                // Decodes the single-digit number with a basic lookup
                 string[index] = LOOKUP[self as usize];
                 index = index.wrapping_sub(1);
             }
