@@ -204,9 +204,9 @@ macro_rules! impl_sized_numtoa_for {
                         Some(value) => value,
                         None        => {
                             let value = <$t>::max_value();
-                            string[index] = LOOKUP[(value % 10 + 1) as usize];
+                            string[index] = LOOKUP[((value % base + 1) % base) as usize];
                             index -= 1;
-                            value / 10
+                            value / base + ((value % base == base - 1) as $t)
                         }
                     };
                 } else if self == 0 {
@@ -264,9 +264,9 @@ impl NumToA<i8> for i8 {
                 Some(value) => value,
                 None        => {
                     let value = <i8>::max_value();
-                    string[index] = LOOKUP[(value % 10 + 1) as usize];
+                    string[index] = LOOKUP[((value % base + 1) % base) as usize];
                     index -= 1;
-                    value / 10
+                    value / base + ((value % base == base - 1) as i8)
                 }
             };
         } else if self == 0 {
@@ -451,4 +451,36 @@ fn base10_u64_array_too_small() {
 fn base10_u64_array_just_right() {
     let mut buffer = [0u8; 20];
     let _ = 0u64.numtoa(10, &mut buffer);
+}
+
+#[test]
+fn base8_min_signed_number() {
+    let mut buffer = [0u8; 30];
+    let i = (-128i8).numtoa(8, &mut buffer);
+    assert_eq!(&buffer[i..], b"-200");
+
+    let i = (-32768i16).numtoa(8, &mut buffer);
+    assert_eq!(&buffer[i..], b"-100000");
+
+    let i = (-2147483648i32).numtoa(8, &mut buffer);
+    assert_eq!(&buffer[i..], b"-20000000000");
+
+    let i = (-9223372036854775808i64).numtoa(8, &mut buffer);
+    assert_eq!(&buffer[i..], b"-1000000000000000000000");
+}
+
+#[test]
+fn base16_min_signed_number() {
+    let mut buffer = [0u8; 20];
+    let i = (-128i8).numtoa(16, &mut buffer);
+    assert_eq!(&buffer[i..], b"-80");
+
+    let i = (-32768i16).numtoa(16, &mut buffer);
+    assert_eq!(&buffer[i..], b"-8000");
+
+    let i = (-2147483648i32).numtoa(16, &mut buffer);
+    assert_eq!(&buffer[i..], b"-80000000");
+
+    let i = (-9223372036854775808i64).numtoa(16, &mut buffer);
+    assert_eq!(&buffer[i..], b"-8000000000000000");
 }
