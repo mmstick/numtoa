@@ -228,7 +228,7 @@ macro_rules! impl_sized_numtoa_for {
 
                 if is_negative {
                     string[index] = b'-';
-                    index -= 1;
+                    index = index.wrapping_sub(1);
                 }
 
                 index.wrapping_add(1)
@@ -299,7 +299,7 @@ impl NumToA<i8> for i8 {
 
         if is_negative {
             string[index] = b'-';
-            index -= 1;
+            index = index.wrapping_sub(1);
         }
 
         index.wrapping_add(1)
@@ -370,7 +370,8 @@ fn base10_i8_array_too_small() {
 #[test]
 fn base10_i8_array_just_right() {
     let mut buffer = [0u8; 4];
-    let _ = 0i8.numtoa(10, &mut buffer);
+    let i = (-127i8).numtoa(10, &mut buffer);
+    assert_eq!(&buffer[i..], b"-127");
 }
 
 #[test]
@@ -383,7 +384,8 @@ fn base10_i16_array_too_small() {
 #[test]
 fn base10_i16_array_just_right() {
     let mut buffer = [0u8; 6];
-    let _ = 0i16.numtoa(10, &mut buffer);
+    let i = (-12768i16).numtoa(10, &mut buffer);
+    assert_eq!(&buffer[i..], b"-12768");
 }
 
 #[test]
