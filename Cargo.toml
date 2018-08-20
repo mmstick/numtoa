@@ -1,11 +1,14 @@
 [package]
 name = "numtoa"
-version = "0.0.7"
+version = "0.1.0"
 authors = ["Michael Aaron Murphy <mmstickman@gmail.com>"]
 license = "MIT OR Apache-2.0"
 documentation = "https://docs.rs/numtoa"
 description = "Convert numbers into stack-allocated byte arrays"
-repository = "https://github.com/mmstick/numtoa"
+repository = "https://gitlab.com/mmstick/numtoa"
 keywords = ["numbers", "convert", "numtoa", "itoa", "no_std"]
 categories = ["value-formatting"]
 readme = "README.md"
+
+[features]
+std = []
