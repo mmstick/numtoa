@@ -7,6 +7,22 @@
 //! your choice. Therefore, if you want a binary representation, set the base to 2. If you want hexadecimal, set the
 //! base to 16.
 //!
+//! # Convenience Example
+//!
+//! ```
+//! use numtoa::NumToA;
+//!
+//! let mut buf = [0u8; 20];
+//! let mut string = String::new();
+//!
+//! for number in (1..10) {
+//!     string.push_str(number.numtoa_str(10, &mut buf));
+//!     string.push('\n');
+//! }
+//!
+//! println!("{}", string);
+//! ```
+//!
 //! ## Base 10 Example
 //! ```
 //! use numtoa::NumToA;
@@ -68,6 +84,11 @@
 #![no_std]
 use core::mem::size_of;
 
+#[cfg(feature = "std")]
+extern crate std;
+#[cfg(feature = "std")]
+use std::str;
+
 /// Converts a number into a string representation, storing the conversion into a mutable byte slice.
 pub trait NumToA<T> {
     /// Given a base for encoding and a mutable byte slice, write the number into the byte slice and return the
@@ -94,18 +115,22 @@ pub trait NumToA<T> {
     /// assert_eq!(&buffer[start_indice..], b"15325");
     /// ```
     fn numtoa(self, base: T, string: &mut [u8]) -> usize;
+
+    #[cfg(feature = "std")]
+    /// Convenience method for quickly getting a string from the input's array buffer.
+    fn numtoa_str(self, base: T, buf: &mut [u8; 20]) -> &str;
 }
 
 // A lookup table to prevent the need for conditional branching
 // The value of the remainder of each step will be used as the index
-const LOOKUP: &'static [u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const LOOKUP: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 // A lookup table optimized for decimal lookups. Each two indices represents one possible number.
-const DEC_LOOKUP: &'static [u8; 200] = b"0001020304050607080910111213141516171819\
-                                         2021222324252627282930313233343536373839\
-                                         4041424344454647484950515253545556575859\
-                                         6061626364656667686970717273747576777879\
-                                         8081828384858687888990919293949596979899";
+const DEC_LOOKUP: &[u8; 200] = b"0001020304050607080910111213141516171819\
+                                 2021222324252627282930313233343536373839\
+                                 4041424344454647484950515253545556575859\
+                                 6061626364656667686970717273747576777879\
+                                 8081828384858687888990919293949596979899";
 
 macro_rules! base_10 {
     ($number:ident, $index:ident, $string:ident) => {
@@ -176,6 +201,12 @@ macro_rules! impl_unsized_numtoa_for {
 
                 index.wrapping_add(1)
             }
+
+            #[cfg(feature = "std")]
+            fn numtoa_str(self, base: $t, buf: &mut [u8; 20]) -> &str {
+                let s = self.numtoa(base, buf);
+                unsafe { str::from_utf8_unchecked(&buf[s..]) }
+            }
         }
     }
 }
@@ -233,8 +264,13 @@ macro_rules! impl_sized_numtoa_for {
 
                 index.wrapping_add(1)
             }
-        }
 
+            #[cfg(feature = "std")]
+            fn numtoa_str(self, base: $t, buf: &mut [u8; 20]) -> &str {
+                let s = self.numtoa(base, buf);
+                unsafe { str::from_utf8_unchecked(&buf[s..]) }
+            }
+        }
     }
 }
 
@@ -304,6 +340,12 @@ impl NumToA<i8> for i8 {
 
         index.wrapping_add(1)
     }
+
+    #[cfg(feature = "std")]
+    fn numtoa_str(self, base: Self, buf: &mut [u8; 20]) -> &str {
+        let s = self.numtoa(base, buf);
+        unsafe { str::from_utf8_unchecked(&buf[s..]) }
+    }
 }
 
 impl NumToA<u8> for u8 {
@@ -344,6 +386,12 @@ impl NumToA<u8> for u8 {
         }
 
         index.wrapping_add(1)
+    }
+
+    #[cfg(feature = "std")]
+    fn numtoa_str(self, base: Self, buf: &mut [u8; 20]) -> &str {
+        let s = self.numtoa(base, buf);
+        unsafe { str::from_utf8_unchecked(&buf[s..]) }
     }
 }
 
