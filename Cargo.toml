@@ -1,6 +1,6 @@
 [package]
 name = "numtoa"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Michael Aaron Murphy <mmstickman@gmail.com>"]
 license = "MIT OR Apache-2.0"
 documentation = "https://docs.rs/numtoa"
@@ -9,6 +9,3 @@ repository = "https://gitlab.com/mmstick/numtoa"
 keywords = ["numbers", "convert", "numtoa", "itoa", "no_std"]
 categories = ["value-formatting"]
 readme = "README.md"
-
-[features]
-std = []

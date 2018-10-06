@@ -75,11 +75,7 @@
 
 #![no_std]
 use core::mem::size_of;
-
-#[cfg(feature = "std")]
-extern crate std;
-#[cfg(feature = "std")]
-use std::str;
+use core::str;
 
 /// Converts a number into a string representation, storing the conversion into a mutable byte slice.
 pub trait NumToA<T> {
@@ -113,7 +109,6 @@ pub trait NumToA<T> {
     /// ```
     fn numtoa(self, base: T, string: &mut [u8]) -> &[u8];
 
-    #[cfg(feature = "std")]
     /// Convenience method for quickly getting a string from the input's array buffer.
     fn numtoa_str(self, base: T, buf: &mut [u8]) -> &str;
 }
@@ -199,7 +194,7 @@ macro_rules! impl_unsized_numtoa_for {
                 &string[index.wrapping_add(1)..]
             }
 
-            #[cfg(feature = "std")]
+    
             fn numtoa_str(self, base: $t, buf: &mut [u8]) -> &str {
                 unsafe { str::from_utf8_unchecked(self.numtoa(base, buf)) }
             }
@@ -261,7 +256,7 @@ macro_rules! impl_sized_numtoa_for {
                 &string[index.wrapping_add(1)..]
             }
 
-            #[cfg(feature = "std")]
+    
             fn numtoa_str(self, base: $t, buf: &mut [u8]) -> &str {
                 unsafe { str::from_utf8_unchecked(self.numtoa(base, buf)) }
             }
@@ -336,7 +331,6 @@ impl NumToA<i8> for i8 {
         &string[index.wrapping_add(1)..]
     }
 
-    #[cfg(feature = "std")]
     fn numtoa_str(self, base: Self, buf: &mut [u8]) -> &str {
         unsafe { str::from_utf8_unchecked(self.numtoa(base, buf)) }
     }
@@ -382,7 +376,6 @@ impl NumToA<u8> for u8 {
         &string[index.wrapping_add(1)..]
     }
 
-    #[cfg(feature = "std")]
     fn numtoa_str(self, base: Self, buf: &mut [u8]) -> &str {
         unsafe { str::from_utf8_unchecked(self.numtoa(base, buf)) }
     }

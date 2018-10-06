@@ -1,3 +1,7 @@
+# 0.2.1
+
+- `str` is in `core`, so the `std` feature can be removed.
+
 # 0.2.0
 
 - Increased ergonomics of the `numtoa` method to return a `&[u8]` instead of a `usize`.
