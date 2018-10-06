@@ -20,8 +20,8 @@ use numtoa::NumToA;
 use std::io::{self, Write};
 
 let mut buffer = [u8; 20];
-println!("{}", 12345.numtoa(10, &mut buffer));
-println!("{}", 256652.numtoa(10, &mut buffer));
+println!("{}", 12345.numtoa_str(10, &mut buffer));
+println!("{}", 256652.numtoa_str(10, &mut buffer));
 ```
 
 ## `&[u8]` Example

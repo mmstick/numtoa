@@ -1,3 +1,7 @@
+# 0.2.3
+
+- Fix the `&str` example in the readme.
+
 # 0.2.2
 
 - Update the readme to reflect the API change in 0.2.1
