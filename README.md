@@ -13,23 +13,20 @@ In addition to supporting the standard base 10 conversion, this implementation a
 your choice. Therefore, if you want a binary representation, set the base to 2. If you want hexadecimal, set the
 base to 16.
 
-## No Unsafe
+## std Example
 
-Both the standard library and itoa crate rely on unsafe functions, but this implementation has been able to avoid
-the use of unsafe entirely.
+> To enable std support, add `features = ["std"]` to `Cargo.toml`
 
-## Fast
+```rust
+use numtoa::NumToA;
+use std::io::{self, Write};
 
-Performance is roughly identical to that of the `itoa` crate when performing base 10 conversions. Below is a benchmark
-of printing 0 through 5,000,000 to `/dev/null`
-
-```
-std:   1150615048 ns
-itoa:   838556714 ns
-numtoa: 825544518 ns
+let mut buffer = [u8; 20];
+println!("{}", 12345.numtoa(10, &mut buffer));
+println!("{}", 256652.numtoa(10, &mut buffer));
 ```
 
-## Base 10 Example
+## nostd-Compatible Example
 
 ```rust
 use numtoa::NumToA;
@@ -40,26 +37,35 @@ let mut stdout = stdout.lock();
 let mut buffer = [0u8; 20];
 
 let number: u32 = 162392;
-let mut start_index = number.numtoa(10, &mut buffer);
-let _ = stdout.write(&buffer[start_index..]);
+let _ = stdout.write(number.numtoa(10, &mut buffer));
 let _ = stdout.write(b"\n");
-assert_eq!(&buffer[start_index..], b"162392");
+assert_eq!(number.numtoa(10, &mut buffer), b"162392");
 
-let other_number: i32 = -6235;
-start_index = other_number.numtoa(10, &mut buffer);
-let _ = stdout.write(&buffer[start_index..]);
+let number: i32 = -6235;
+let _ = stdout.write(number.numtoa(10, &mut buffer));
 let _ = stdout.write(b"\n");
-assert_eq!(&buffer[start_index..], b"-6235");
 
-let large_num: u64 = 35320842;
-start_index = large_num.numtoa(10, &mut buffer);
-let _ = stdout.write(&buffer[start_index..]);
+let number: i8 = -128;
+let _ = stdout.write(number.numtoa(10, &mut buffer));
 let _ = stdout.write(b"\n");
-assert_eq!(&buffer[start_index..], b"35320842");
 
-let max_u64: u64 = 18446744073709551615;
-start_index = max_u64.numtoa(10, &mut buffer);
-let _ = stdout.write(&buffer[start_index..]);
+let number: i8 = 53;
+let _ = stdout.write(number.numtoa(10, &mut buffer));
 let _ = stdout.write(b"\n");
-assert_eq!(&buffer[start_index..], b"18446744073709551615");
+
+let number: i16 = -256;
+let _ = stdout.write(number.numtoa(10, &mut buffer));
+let _ = stdout.write(b"\n");
+
+let number: i16 = -32768;
+let _ = stdout.write(number.numtoa(10, &mut buffer));
+let _ = stdout.write(b"\n");
+
+let number: u64 = 35320842;
+let _ = stdout.write(number.numtoa(10, &mut buffer));
+let _ = stdout.write(b"\n");
+
+let number: u64 = 18446744073709551615;
+let _ = stdout.write(number.numtoa(10, &mut buffer));
+let _ = stdout.write(b"\n");
 ```

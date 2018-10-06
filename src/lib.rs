@@ -33,52 +33,44 @@
 //! let mut buffer = [0u8; 20];
 //!
 //! let number: u32 = 162392;
-//! let mut start_indice = number.numtoa(10, &mut buffer);
-//! let _ = stdout.write(&buffer[start_indice..]);
+//! let _ = stdout.write(number.numtoa(10, &mut buffer));
 //! let _ = stdout.write(b"\n");
-//! assert_eq!(&buffer[start_indice..], b"162392");
+//! assert_eq!(number.numtoa(10, &mut buffer), b"162392");
 //!
-//! let other_number: i32 = -6235;
-//! start_indice = other_number.numtoa(10, &mut buffer);
-//! let _ = stdout.write(&buffer[start_indice..]);
+//! let number: i32 = -6235;
+//! let _ = stdout.write(number.numtoa(10, &mut buffer));
 //! let _ = stdout.write(b"\n");
-//! assert_eq!(&buffer[start_indice..], b"-6235");
+//! assert_eq!(number.numtoa(10, &mut buffer), b"-6235");
 //!
-//! let other_number: i8 = -128;
-//! start_indice = other_number.numtoa(10, &mut buffer);
-//! let _ = stdout.write(&buffer[start_indice..]);
+//! let number: i8 = -128;
+//! let _ = stdout.write(number.numtoa(10, &mut buffer));
 //! let _ = stdout.write(b"\n");
-//! assert_eq!(&buffer[start_indice..], b"-128");
+//! assert_eq!(number.numtoa(10, &mut buffer), b"-128");
 //!
-//! let other_number: i8 = 53;
-//! start_indice = other_number.numtoa(10, &mut buffer);
-//! let _ = stdout.write(&buffer[start_indice..]);
+//! let number: i8 = 53;
+//! let _ = stdout.write(number.numtoa(10, &mut buffer));
 //! let _ = stdout.write(b"\n");
-//! assert_eq!(&buffer[start_indice..], b"53");
+//! assert_eq!(number.numtoa(10, &mut buffer), b"53");
 //!
-//! let other_number: i16 = -256;
-//! start_indice = other_number.numtoa(10, &mut buffer);
-//! let _ = stdout.write(&buffer[start_indice..]);
+//! let number: i16 = -256;
+//! let _ = stdout.write(number.numtoa(10, &mut buffer));
 //! let _ = stdout.write(b"\n");
-//! assert_eq!(&buffer[start_indice..], b"-256");
+//! assert_eq!(number.numtoa(10, &mut buffer), b"-256");
 //!
-//! let other_number: i16 = -32768;
-//! start_indice = other_number.numtoa(10, &mut buffer);
-//! let _ = stdout.write(&buffer[start_indice..]);
+//! let number: i16 = -32768;
+//! let _ = stdout.write(number.numtoa(10, &mut buffer));
 //! let _ = stdout.write(b"\n");
-//! assert_eq!(&buffer[start_indice..], b"-32768");
+//! assert_eq!(number.numtoa(10, &mut buffer), b"-32768");
 //!
-//! let large_num: u64 = 35320842;
-//! start_indice = large_num.numtoa(10, &mut buffer);
-//! let _ = stdout.write(&buffer[start_indice..]);
+//! let number: u64 = 35320842;
+//! let _ = stdout.write(number.numtoa(10, &mut buffer));
 //! let _ = stdout.write(b"\n");
-//! assert_eq!(&buffer[start_indice..], b"35320842");
+//! assert_eq!(number.numtoa(10, &mut buffer), b"35320842");
 //!
-//! let max_u64: u64 = 18446744073709551615;
-//! start_indice = max_u64.numtoa(10, &mut buffer);
-//! let _ = stdout.write(&buffer[start_indice..]);
+//! let number: u64 = 18446744073709551615;
+//! let _ = stdout.write(number.numtoa(10, &mut buffer));
 //! let _ = stdout.write(b"\n");
-//! assert_eq!(&buffer[start_indice..], b"18446744073709551615");
+//! assert_eq!(number.numtoa(10, &mut buffer), b"18446744073709551615");
 //! ```
 
 #![no_std]
@@ -108,17 +100,22 @@ pub trait NumToA<T> {
     /// let stdout = io::stdout();
     /// let stdout = &mut io::stdout();
     ///
+    /// // Allocate a buffer that will be reused in each iteration.
     /// let mut buffer = [0u8; 20];
+    /// 
     /// let number = 15325;
-    /// let start_indice = number.numtoa(10, &mut buffer);
-    /// let _ = stdout.write(&buffer[start_indice..]);
-    /// assert_eq!(&buffer[start_indice..], b"15325");
+    /// let _ = stdout.write(number.numtoa(10, &mut buffer));
+    /// 
+    /// let number = 1241;
+    /// let _ = stdout.write(number.numtoa(10, &mut buffer));
+    /// 
+    /// assert_eq!(12345.numtoa(10, &mut buffer), b"12345");
     /// ```
-    fn numtoa(self, base: T, string: &mut [u8]) -> usize;
+    fn numtoa(self, base: T, string: &mut [u8]) -> &[u8];
 
     #[cfg(feature = "std")]
     /// Convenience method for quickly getting a string from the input's array buffer.
-    fn numtoa_str(self, base: T, buf: &mut [u8; 20]) -> &str;
+    fn numtoa_str(self, base: T, buf: &mut [u8]) -> &str;
 }
 
 // A lookup table to prevent the need for conditional branching
@@ -168,7 +165,7 @@ macro_rules! base_10 {
 macro_rules! impl_unsized_numtoa_for {
     ($t:ty) => {
         impl NumToA<$t> for $t {
-            fn numtoa(mut self, base: $t, string: &mut [u8]) -> usize {
+            fn numtoa(mut self, base: $t, string: &mut [u8]) -> &[u8] {
                 // Check if the buffer is large enough and panic on debug builds if it isn't
                 if cfg!(debug_assertions) {
                     if base == 10 {
@@ -184,7 +181,7 @@ macro_rules! impl_unsized_numtoa_for {
                 let mut index = string.len() - 1;
                 if self == 0 {
                     string[index] = b'0';
-                    return index;
+                    return &string[index..];
                 }
 
                 if base == 10 {
@@ -199,13 +196,12 @@ macro_rules! impl_unsized_numtoa_for {
                     }
                 }
 
-                index.wrapping_add(1)
+                &string[index.wrapping_add(1)..]
             }
 
             #[cfg(feature = "std")]
-            fn numtoa_str(self, base: $t, buf: &mut [u8; 20]) -> &str {
-                let s = self.numtoa(base, buf);
-                unsafe { str::from_utf8_unchecked(&buf[s..]) }
+            fn numtoa_str(self, base: $t, buf: &mut [u8]) -> &str {
+                unsafe { str::from_utf8_unchecked(self.numtoa(base, buf)) }
             }
         }
     }
@@ -214,7 +210,7 @@ macro_rules! impl_unsized_numtoa_for {
 macro_rules! impl_sized_numtoa_for {
     ($t:ty) => {
         impl NumToA<$t> for $t {
-            fn numtoa(mut self, base: $t, string: &mut [u8]) -> usize {
+            fn numtoa(mut self, base: $t, string: &mut [u8]) -> &[u8] {
                 if cfg!(debug_assertions) {
                     if base == 10 {
                         match size_of::<$t>() {
@@ -242,7 +238,7 @@ macro_rules! impl_sized_numtoa_for {
                     };
                 } else if self == 0 {
                     string[index] = b'0';
-                    return index;
+                    return &string[index..];
                 }
 
                 if base == 10 {
@@ -262,13 +258,12 @@ macro_rules! impl_sized_numtoa_for {
                     index = index.wrapping_sub(1);
                 }
 
-                index.wrapping_add(1)
+                &string[index.wrapping_add(1)..]
             }
 
             #[cfg(feature = "std")]
-            fn numtoa_str(self, base: $t, buf: &mut [u8; 20]) -> &str {
-                let s = self.numtoa(base, buf);
-                unsafe { str::from_utf8_unchecked(&buf[s..]) }
+            fn numtoa_str(self, base: $t, buf: &mut [u8]) -> &str {
+                unsafe { str::from_utf8_unchecked(self.numtoa(base, buf)) }
             }
         }
     }
@@ -284,7 +279,7 @@ impl_unsized_numtoa_for!(u64);
 impl_unsized_numtoa_for!(usize);
 
 impl NumToA<i8> for i8 {
-    fn numtoa(mut self, base: i8, string: &mut [u8]) -> usize {
+    fn numtoa(mut self, base: i8, string: &mut [u8]) -> &[u8] {
         if cfg!(debug_assertions) {
             if base == 10 {
                 debug_assert!(string.len() >= 4, "i8 conversions need at least 4 bytes");
@@ -307,7 +302,7 @@ impl NumToA<i8> for i8 {
             };
         } else if self == 0 {
             string[index] = b'0';
-            return index;
+            return &string[index..];
         }
 
         if base == 10 {
@@ -338,18 +333,17 @@ impl NumToA<i8> for i8 {
             index = index.wrapping_sub(1);
         }
 
-        index.wrapping_add(1)
+        &string[index.wrapping_add(1)..]
     }
 
     #[cfg(feature = "std")]
-    fn numtoa_str(self, base: Self, buf: &mut [u8; 20]) -> &str {
-        let s = self.numtoa(base, buf);
-        unsafe { str::from_utf8_unchecked(&buf[s..]) }
+    fn numtoa_str(self, base: Self, buf: &mut [u8]) -> &str {
+        unsafe { str::from_utf8_unchecked(self.numtoa(base, buf)) }
     }
 }
 
 impl NumToA<u8> for u8 {
-    fn numtoa(mut self, base: u8, string: &mut [u8]) -> usize {
+    fn numtoa(mut self, base: u8, string: &mut [u8]) -> &[u8] {
         if cfg!(debug_assertions) {
             if base == 10 {
                 debug_assert!(string.len() >= 3, "u8 conversions need at least 3 bytes");
@@ -359,7 +353,7 @@ impl NumToA<u8> for u8 {
         let mut index = string.len() - 1;
         if self == 0 {
             string[index] = b'0';
-            return index;
+            return &string[index..];
         }
 
         if base == 10 {
@@ -385,13 +379,12 @@ impl NumToA<u8> for u8 {
             }
         }
 
-        index.wrapping_add(1)
+        &string[index.wrapping_add(1)..]
     }
 
     #[cfg(feature = "std")]
-    fn numtoa_str(self, base: Self, buf: &mut [u8; 20]) -> &str {
-        let s = self.numtoa(base, buf);
-        unsafe { str::from_utf8_unchecked(&buf[s..]) }
+    fn numtoa_str(self, base: Self, buf: &mut [u8]) -> &str {
+        unsafe { str::from_utf8_unchecked(self.numtoa(base, buf)) }
     }
 }
 
@@ -424,8 +417,7 @@ fn base10_i8_array_too_small() {
 #[test]
 fn base10_i8_array_just_right() {
     let mut buffer = [0u8; 4];
-    let i = (-127i8).numtoa(10, &mut buffer);
-    assert_eq!(&buffer[i..], b"-127");
+    assert_eq!((-127i8).numtoa(10, &mut buffer), b"-127");
 }
 
 #[test]
@@ -438,8 +430,7 @@ fn base10_i16_array_too_small() {
 #[test]
 fn base10_i16_array_just_right() {
     let mut buffer = [0u8; 6];
-    let i = (-12768i16).numtoa(10, &mut buffer);
-    assert_eq!(&buffer[i..], b"-12768");
+    assert_eq!((-12768i16).numtoa(10, &mut buffer), b"-12768");
 }
 
 #[test]
@@ -510,31 +501,17 @@ fn base10_u64_array_just_right() {
 #[test]
 fn base8_min_signed_number() {
     let mut buffer = [0u8; 30];
-    let i = (-128i8).numtoa(8, &mut buffer);
-    assert_eq!(&buffer[i..], b"-200");
-
-    let i = (-32768i16).numtoa(8, &mut buffer);
-    assert_eq!(&buffer[i..], b"-100000");
-
-    let i = (-2147483648i32).numtoa(8, &mut buffer);
-    assert_eq!(&buffer[i..], b"-20000000000");
-
-    let i = (-9223372036854775808i64).numtoa(8, &mut buffer);
-    assert_eq!(&buffer[i..], b"-1000000000000000000000");
+    assert_eq!((-128i8).numtoa(8, &mut buffer), b"-200");
+    assert_eq!((-32768i16).numtoa(8, &mut buffer), b"-100000");
+    assert_eq!((-2147483648i32).numtoa(8, &mut buffer), b"-20000000000");
+    assert_eq!((-9223372036854775808i64).numtoa(8, &mut buffer), b"-1000000000000000000000");
 }
 
 #[test]
 fn base16_min_signed_number() {
     let mut buffer = [0u8; 20];
-    let i = (-128i8).numtoa(16, &mut buffer);
-    assert_eq!(&buffer[i..], b"-80");
-
-    let i = (-32768i16).numtoa(16, &mut buffer);
-    assert_eq!(&buffer[i..], b"-8000");
-
-    let i = (-2147483648i32).numtoa(16, &mut buffer);
-    assert_eq!(&buffer[i..], b"-80000000");
-
-    let i = (-9223372036854775808i64).numtoa(16, &mut buffer);
-    assert_eq!(&buffer[i..], b"-8000000000000000");
+    assert_eq!((-128i8).numtoa(16, &mut buffer), b"-80");
+    assert_eq!((-32768i16).numtoa(16, &mut buffer), b"-8000");
+    assert_eq!((-2147483648i32).numtoa(16, &mut buffer), b"-80000000");
+    assert_eq!((-9223372036854775808i64).numtoa(16, &mut buffer), b"-8000000000000000");
 }
