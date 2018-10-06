@@ -13,9 +13,7 @@ In addition to supporting the standard base 10 conversion, this implementation a
 your choice. Therefore, if you want a binary representation, set the base to 2. If you want hexadecimal, set the
 base to 16.
 
-## std Example
-
-> To enable std support, add `features = ["std"]` to `Cargo.toml`
+## `&str` Example
 
 ```rust
 use numtoa::NumToA;
@@ -26,7 +24,7 @@ println!("{}", 12345.numtoa(10, &mut buffer));
 println!("{}", 256652.numtoa(10, &mut buffer));
 ```
 
-## nostd-Compatible Example
+## `&[u8]` Example
 
 ```rust
 use numtoa::NumToA;

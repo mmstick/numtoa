@@ -1,3 +1,7 @@
+# 0.2.2
+
+- Update the readme to reflect the API change in 0.2.1
+
 # 0.2.1
 
 - `str` is in `core`, so the `std` feature can be removed.
