@@ -168,6 +168,7 @@ macro_rules! impl_unsized_numtoa_for {
                             2 => debug_assert!(string.len() >= 5,  "u16 base 10 conversions require at least 5 bytes"),
                             4 => debug_assert!(string.len() >= 10, "u32 base 10 conversions require at least 10 bytes"),
                             8 => debug_assert!(string.len() >= 20, "u64 base 10 conversions require at least 20 bytes"),
+                            16 => debug_assert!(string.len() >= 39, "u128 base 10 conversions require at least 39 bytes"),
                             _ => unreachable!()
                         }
                     }
@@ -211,7 +212,8 @@ macro_rules! impl_sized_numtoa_for {
                         match size_of::<$t>() {
                             2 => debug_assert!(string.len() >= 6,  "i16 base 10 conversions require at least 6 bytes"),
                             4 => debug_assert!(string.len() >= 11, "i32 base 10 conversions require at least 11 bytes"),
-                            8 => debug_assert!(string.len() >= 20, "i64 base 10 conversions require at least 20 bytes"),
+                            8 => debug_assert!(string.len() >= 19, "i64 base 10 conversions require at least 19 bytes"),
+                            16 => debug_assert!(string.len() >= 39, "i128 base 10 conversions require at least 39 bytes"),
                             _ => unreachable!()
                         }
                     }
@@ -267,10 +269,12 @@ macro_rules! impl_sized_numtoa_for {
 impl_sized_numtoa_for!(i16);
 impl_sized_numtoa_for!(i32);
 impl_sized_numtoa_for!(i64);
+impl_sized_numtoa_for!(i128);
 impl_sized_numtoa_for!(isize);
 impl_unsized_numtoa_for!(u16);
 impl_unsized_numtoa_for!(u32);
 impl_unsized_numtoa_for!(u64);
+impl_unsized_numtoa_for!(u128);
 impl_unsized_numtoa_for!(usize);
 
 impl NumToA<i8> for i8 {
@@ -468,13 +472,13 @@ fn base10_u32_array_just_right() {
 #[test]
 #[should_panic]
 fn base10_i64_array_too_small() {
-    let mut buffer = [0u8; 19];
+    let mut buffer = [0u8; 18];
     let _ = 0i64.numtoa(10, &mut buffer);
 }
 
 #[test]
 fn base10_i64_array_just_right() {
-    let mut buffer = [0u8; 20];
+    let mut buffer = [0u8; 19];
     let _ = 0i64.numtoa(10, &mut buffer);
 }
 
@@ -492,19 +496,47 @@ fn base10_u64_array_just_right() {
 }
 
 #[test]
+#[should_panic]
+fn base10_i128_array_too_small() {
+    let mut buffer = [0u8; 38];
+    let _ = 0i128.numtoa(10, &mut buffer);
+}
+
+#[test]
+fn base10_i128_array_just_right() {
+    let mut buffer = [0u8; 39];
+    let _ = 0i128.numtoa(10, &mut buffer);
+}
+
+#[test]
+#[should_panic]
+fn base10_u128_array_too_small() {
+    let mut buffer = [0u8; 38];
+    let _ = 0u128.numtoa(10, &mut buffer);
+}
+
+#[test]
+fn base10_u128_array_just_right() {
+    let mut buffer = [0u8; 39];
+    let _ = 0u128.numtoa(10, &mut buffer);
+}
+
+#[test]
 fn base8_min_signed_number() {
-    let mut buffer = [0u8; 30];
+    let mut buffer = [0u8; 50];
     assert_eq!((-128i8).numtoa(8, &mut buffer), b"-200");
     assert_eq!((-32768i16).numtoa(8, &mut buffer), b"-100000");
     assert_eq!((-2147483648i32).numtoa(8, &mut buffer), b"-20000000000");
     assert_eq!((-9223372036854775808i64).numtoa(8, &mut buffer), b"-1000000000000000000000");
+    assert_eq!((i128::MIN).numtoa(8, &mut buffer), b"-2000000000000000000000000000000000000000000");
 }
 
 #[test]
 fn base16_min_signed_number() {
-    let mut buffer = [0u8; 20];
+    let mut buffer = [0u8; 40];
     assert_eq!((-128i8).numtoa(16, &mut buffer), b"-80");
     assert_eq!((-32768i16).numtoa(16, &mut buffer), b"-8000");
     assert_eq!((-2147483648i32).numtoa(16, &mut buffer), b"-80000000");
     assert_eq!((-9223372036854775808i64).numtoa(16, &mut buffer), b"-8000000000000000");
+    assert_eq!((i128::MIN).numtoa(16, &mut buffer), b"-80000000000000000000000000000000");
 }
