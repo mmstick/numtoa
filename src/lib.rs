@@ -311,10 +311,10 @@ impl NumToA<i8> for i8 {
                 string[index] = LOOKUP[(self % 10) as usize];
                 index = index.wrapping_sub(3);
             } else if self > 9 {
-                self *= 2;
-                string[index-1..index+1].copy_from_slice(&DEC_LOOKUP[self as usize..self as usize+2]);
+                let idx = self as usize * 2;
+                string[index-1..index+1].copy_from_slice(&DEC_LOOKUP[idx..idx+2]);
                 index = index.wrapping_sub(2);
-            } else {
+             } else {
                 string[index] = LOOKUP[self as usize];
                 index = index.wrapping_sub(1);
             }
@@ -493,6 +493,22 @@ fn base10_u64_array_too_small() {
 fn base10_u64_array_just_right() {
     let mut buffer = [0u8; 20];
     let _ = 0u64.numtoa(10, &mut buffer);
+}
+
+#[test]
+fn base10_i8_all() {
+    let mut buffer = [0u8; 4];
+    for i in i8::MIN..i8::MAX {
+        let _ = i.numtoa(10, &mut buffer);
+    }
+}
+
+#[test]
+fn base10_u8_all() {
+    let mut buffer = [0u8; 3];
+    for i in u8::MIN..u8::MAX {
+        let _ = i.numtoa(10, &mut buffer);
+    }
 }
 
 #[test]
