@@ -1,6 +1,6 @@
 [package]
 name = "numtoa"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["Michael Aaron Murphy <mmstickman@gmail.com>"]
 license = "MIT OR Apache-2.0"
 documentation = "https://docs.rs/numtoa"
