@@ -78,7 +78,7 @@ use core::mem::size_of;
 use core::str;
 
 /// Converts a number into a string representation, storing the conversion into a mutable byte slice.
-pub trait NumToA<T> {
+pub trait NumToA {
     /// Given a base for encoding and a mutable byte slice, write the number into the byte slice and return the
     /// indice where the inner string begins. The inner string can be extracted by slicing the byte slice from
     /// that indice.
@@ -107,10 +107,10 @@ pub trait NumToA<T> {
     /// 
     /// assert_eq!(12345.numtoa(10, &mut buffer), b"12345");
     /// ```
-    fn numtoa(self, base: T, string: &mut [u8]) -> &[u8];
+    fn numtoa(self, base: Self, string: &mut [u8]) -> &[u8];
 
     /// Convenience method for quickly getting a string from the input's array buffer.
-    fn numtoa_str(self, base: T, buf: &mut [u8]) -> &str;
+    fn numtoa_str(self, base: Self, buf: &mut [u8]) -> &str;
 }
 
 // A lookup table to prevent the need for conditional branching
@@ -159,7 +159,7 @@ macro_rules! base_10 {
 
 macro_rules! impl_unsized_numtoa_for {
     ($t:ty) => {
-        impl NumToA<$t> for $t {
+        impl NumToA for $t {
             fn numtoa(mut self, base: $t, string: &mut [u8]) -> &[u8] {
                 // Check if the buffer is large enough and panic on debug builds if it isn't
                 if cfg!(debug_assertions) {
@@ -205,7 +205,7 @@ macro_rules! impl_unsized_numtoa_for {
 
 macro_rules! impl_sized_numtoa_for {
     ($t:ty) => {
-        impl NumToA<$t> for $t {
+        impl NumToA for $t {
             fn numtoa(mut self, base: $t, string: &mut [u8]) -> &[u8] {
                 if cfg!(debug_assertions) {
                     if base == 10 {
@@ -277,7 +277,7 @@ impl_unsized_numtoa_for!(u64);
 impl_unsized_numtoa_for!(u128);
 impl_unsized_numtoa_for!(usize);
 
-impl NumToA<i8> for i8 {
+impl NumToA for i8 {
     fn numtoa(mut self, base: i8, string: &mut [u8]) -> &[u8] {
         if cfg!(debug_assertions) {
             if base == 10 {
@@ -340,7 +340,7 @@ impl NumToA<i8> for i8 {
     }
 }
 
-impl NumToA<u8> for u8 {
+impl NumToA for u8 {
     fn numtoa(mut self, base: u8, string: &mut [u8]) -> &[u8] {
         if cfg!(debug_assertions) {
             if base == 10 {
