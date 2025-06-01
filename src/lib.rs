@@ -489,11 +489,13 @@ pub mod base10 {
         $core_function_name:ident,
         $base10_function_name:ident,
         $needed_buffer_size:expr) => {
+
             pub const fn $base10_function_name(num: $type_name) -> AsciiNumber<$needed_buffer_size> {
                 let mut string = [0_u8; $needed_buffer_size];
                 let len = $core_function_name(num, 10, &mut string).len();
                 return AsciiNumber { string, start:$needed_buffer_size-len}
             }
+
         };
     }
 
@@ -502,7 +504,7 @@ pub mod base10 {
     impl_numtoa_base10_init_for!(u32,numtoa_u32,u32,10); // 4294967295
     impl_numtoa_base10_init_for!(u64,numtoa_u64,u64,20); // 18446744073709551615
     impl_numtoa_base10_init_for!(u128,numtoa_u128,u128,39); // 340282366920938463463374607431768211455
-    impl_numtoa_base10_init_for!(i8,numtoa_i8,i8,3); // -128
+    impl_numtoa_base10_init_for!(i8,numtoa_i8,i8,4); // -128
     impl_numtoa_base10_init_for!(i16,numtoa_i16,i16,6); // -32768
     impl_numtoa_base10_init_for!(i32,numtoa_i32,i32,11); // -2147483648
     impl_numtoa_base10_init_for!(i64,numtoa_i64,i64,20); // -9223372036854775808
