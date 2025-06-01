@@ -164,7 +164,7 @@ macro_rules! base_10 {
     }
 }
 
-macro_rules! impl_unsized_numtoa_for {
+macro_rules! impl_unsigned_numtoa_for {
     ($t:ty) => {
         impl NumToA for $t {
             fn numtoa(mut self, base: $t, string: &mut [u8]) -> &[u8] {
@@ -210,7 +210,7 @@ macro_rules! impl_unsized_numtoa_for {
     }
 }
 
-macro_rules! impl_sized_numtoa_for {
+macro_rules! impl_signed_numtoa_for {
     ($t:ty) => {
         impl NumToA for $t {
             fn numtoa(mut self, base: $t, string: &mut [u8]) -> &[u8] {
@@ -273,16 +273,16 @@ macro_rules! impl_sized_numtoa_for {
     }
 }
 
-impl_sized_numtoa_for!(i16);
-impl_sized_numtoa_for!(i32);
-impl_sized_numtoa_for!(i64);
-impl_sized_numtoa_for!(i128);
-impl_sized_numtoa_for!(isize);
-impl_unsized_numtoa_for!(u16);
-impl_unsized_numtoa_for!(u32);
-impl_unsized_numtoa_for!(u64);
-impl_unsized_numtoa_for!(u128);
-impl_unsized_numtoa_for!(usize);
+impl_signed_numtoa_for!(i16);
+impl_signed_numtoa_for!(i32);
+impl_signed_numtoa_for!(i64);
+impl_signed_numtoa_for!(i128);
+impl_signed_numtoa_for!(isize);
+impl_unsigned_numtoa_for!(u16);
+impl_unsigned_numtoa_for!(u32);
+impl_unsigned_numtoa_for!(u64);
+impl_unsigned_numtoa_for!(u128);
+impl_unsigned_numtoa_for!(usize);
 
 impl NumToA for i8 {
     fn numtoa(mut self, base: i8, string: &mut [u8]) -> &[u8] {
