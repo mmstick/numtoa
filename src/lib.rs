@@ -184,7 +184,7 @@ macro_rules! impl_unsized_numtoa_for {
                 let mut index = string.len() - 1;
                 if self == 0 {
                     string[index] = b'0';
-                    return &string[index..];
+                    return string.split_at(index).1;
                 }
 
                 if base == 10 {
@@ -199,7 +199,7 @@ macro_rules! impl_unsized_numtoa_for {
                     }
                 }
 
-                &string[index.wrapping_add(1)..]
+                string.split_at(index.wrapping_add(1)).1
             }
 
     
@@ -242,7 +242,7 @@ macro_rules! impl_sized_numtoa_for {
                     };
                 } else if self == 0 {
                     string[index] = b'0';
-                    return &string[index..];
+                    return string.split_at(index).1;
                 }
 
                 if base == 10 {
@@ -262,7 +262,7 @@ macro_rules! impl_sized_numtoa_for {
                     index = index.wrapping_sub(1);
                 }
 
-                &string[index.wrapping_add(1)..]
+                string.split_at(index.wrapping_add(1)).1
             }
 
     
