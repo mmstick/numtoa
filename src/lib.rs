@@ -124,11 +124,10 @@ const DEC_LOOKUP: &[u8; 200] = b"0001020304050607080910111213141516171819\
                                  6061626364656667686970717273747576777879\
                                  8081828384858687888990919293949596979899";
 
-macro_rules! copy_3_dec_lut_bytes {
+macro_rules! copy_2_dec_lut_bytes {
     ($to:ident,$to_index:expr,$lut_index:expr) => {
-        $to[($to_index as usize) % $to.len()] = DEC_LOOKUP[($lut_index as usize) % DEC_LOOKUP.len()];
-        $to[($to_index as usize+1) % $to.len()] = DEC_LOOKUP[($lut_index as usize+1) % DEC_LOOKUP.len()];
-        $to[($to_index as usize+2) % $to.len()] = DEC_LOOKUP[($lut_index as usize+2) % DEC_LOOKUP.len()];
+        $to[$to_index as usize] = DEC_LOOKUP[$lut_index as usize];
+        $to[$to_index as usize+1] = DEC_LOOKUP[$lut_index as usize+1];
     };
 }
 
@@ -138,24 +137,24 @@ macro_rules! base_10 {
         while $number > 9999 {
             let rem = ($number % 10000) as u16;
             let (frst, scnd) = ((rem / 100) * 2, (rem % 100) * 2);
-            copy_3_dec_lut_bytes!($string, $index-3, frst);
-            copy_3_dec_lut_bytes!($string, $index-1, scnd);
+            copy_2_dec_lut_bytes!($string, $index-3, frst);
+            copy_2_dec_lut_bytes!($string, $index-1, scnd);
             $index = $index.wrapping_sub(4);
             $number /= 10000;
         }
         if $number > 999 {
             let (frst, scnd) = (($number / 100) * 2, ($number % 100) * 2);
-            copy_3_dec_lut_bytes!($string, $index-3, frst);
-            copy_3_dec_lut_bytes!($string, $index-1, scnd);
+            copy_2_dec_lut_bytes!($string, $index-3, frst);
+            copy_2_dec_lut_bytes!($string, $index-1, scnd);
             $index = $index.wrapping_sub(4);
         } else if $number > 99 {
             let section = ($number as u16 / 10) * 2;
-            copy_3_dec_lut_bytes!($string, $index-2, section);
+            copy_2_dec_lut_bytes!($string, $index-2, section);
             $string[$index] = LOOKUP[($number % 10) as usize];
             $index = $index.wrapping_sub(3);
         } else if $number > 9 {
             $number *= 2;
-            copy_3_dec_lut_bytes!($string, $index-1, $number);
+            copy_2_dec_lut_bytes!($string, $index-1, $number);
             $index = $index.wrapping_sub(2);
         } else {
             $string[$index] = LOOKUP[$number as usize];
@@ -329,12 +328,12 @@ pub const fn numtoa_i8(mut num: i8, base: i8, string: &mut [u8]) -> &[u8] {
     if base == 10 {
         if num > 99 {
             let section = (num / 10) * 2;
-            copy_3_dec_lut_bytes!(string, index-2, section);
+            copy_2_dec_lut_bytes!(string, index-2, section);
             string[index] = LOOKUP[(num % 10) as usize];
             index = index.wrapping_sub(3);
         } else if num > 9 {
             let idx = num as usize * 2;
-            copy_3_dec_lut_bytes!(string, index-1, idx);
+            copy_2_dec_lut_bytes!(string, index-1, idx);
             index = index.wrapping_sub(2);
             } else {
             string[index] = LOOKUP[num as usize];
@@ -387,12 +386,12 @@ pub const fn numtoa_u8(mut num: u8, base: u8, string: &mut [u8]) -> &[u8] {
     if base == 10 {
         if num > 99 {
             let section = (num / 10) * 2;
-            copy_3_dec_lut_bytes!(string, index-2, section);
+            copy_2_dec_lut_bytes!(string, index-2, section);
             string[index] = LOOKUP[(num % 10) as usize];
             index = index.wrapping_sub(3);
         } else if num > 9 {
             num *= 2;
-            copy_3_dec_lut_bytes!(string, index-1, num);
+            copy_2_dec_lut_bytes!(string, index-1, num);
             index = index.wrapping_sub(2);
         } else {
             string[index] = LOOKUP[num as usize];
