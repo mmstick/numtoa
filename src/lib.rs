@@ -288,16 +288,16 @@ macro_rules! impl_signed_numtoa_for {
     }
 }
 
-impl_signed_numtoa_for!(i16,numtoa_i16,numtoa_str_i16);
-impl_signed_numtoa_for!(i32,numtoa_i32,numtoa_str_i32);
-impl_signed_numtoa_for!(i64,numtoa_i64,numtoa_str_i64);
-impl_signed_numtoa_for!(i128,numtoa_i128,numtoa_str_i128);
-impl_signed_numtoa_for!(isize,numtoa_isize,numtoa_str_isize);
-impl_unsigned_numtoa_for!(u16,numtoa_u16,numtoa_str_u16);
-impl_unsigned_numtoa_for!(u32,numtoa_u32,numtoa_str_u32);
-impl_unsigned_numtoa_for!(u64,numtoa_u64,numtoa_str_u64);
-impl_unsigned_numtoa_for!(u128,numtoa_u128,numtoa_str_u128);
-impl_unsigned_numtoa_for!(usize,numtoa_usize,numtoa_str_usize);
+impl_signed_numtoa_for!(i16,numtoa_i16,numtoa_i16_str);
+impl_signed_numtoa_for!(i32,numtoa_i32,numtoa_i32_str);
+impl_signed_numtoa_for!(i64,numtoa_i64,numtoa_i64_str);
+impl_signed_numtoa_for!(i128,numtoa_i128,numtoa_i128_str);
+impl_signed_numtoa_for!(isize,numtoa_isize,numtoa_isize_str);
+impl_unsigned_numtoa_for!(u16,numtoa_u16,numtoa_u16_str);
+impl_unsigned_numtoa_for!(u32,numtoa_u32,numtoa_u32_str);
+impl_unsigned_numtoa_for!(u64,numtoa_u64,numtoa_u64_str);
+impl_unsigned_numtoa_for!(u128,numtoa_u128,numtoa_u128_str);
+impl_unsigned_numtoa_for!(usize,numtoa_usize,numtoa_usize_str);
 
 pub const fn numtoa_i8(mut num: i8, base: i8, string: &mut [u8]) -> &[u8] {
     if cfg!(debug_assertions) {
@@ -356,7 +356,7 @@ pub const fn numtoa_i8(mut num: i8, base: i8, string: &mut [u8]) -> &[u8] {
     string.split_at(index.wrapping_add(1)).1
 }
 
-pub const fn numtoa_str_i8(num: i8, base: i8, string: &mut [u8]) -> &str {
+pub const fn numtoa_i8_str(num: i8, base: i8, string: &mut [u8]) -> &str {
     unsafe { str::from_utf8_unchecked(numtoa_i8(num, base, string)) }
 }
 
@@ -366,7 +366,7 @@ impl NumToA for i8 {
     }
 
     fn numtoa_str(self, base: Self, buf: &mut [u8]) -> &str {
-        numtoa_str_i8(self, base, buf)
+        numtoa_i8_str(self, base, buf)
     }
 }
 
@@ -409,7 +409,7 @@ pub const fn numtoa_u8(mut num: u8, base: u8, string: &mut [u8]) -> &[u8] {
     string.split_at(1).1
 }
 
-pub const fn numtoa_str_u8(num: u8, base: u8, string: &mut [u8]) -> &str {
+pub const fn numtoa_u8_str(num: u8, base: u8, string: &mut [u8]) -> &str {
     unsafe { str::from_utf8_unchecked(numtoa_u8(num, base, string)) }
 }
 
@@ -419,7 +419,7 @@ impl NumToA for u8 {
     }
 
     fn numtoa_str(self, base: Self, buf: &mut [u8]) -> &str {
-        numtoa_str_u8(self, base, buf)
+        numtoa_u8_str(self, base, buf)
     }
 }
 
