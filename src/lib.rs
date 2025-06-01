@@ -124,31 +124,38 @@ const DEC_LOOKUP: &[u8; 200] = b"0001020304050607080910111213141516171819\
                                  6061626364656667686970717273747576777879\
                                  8081828384858687888990919293949596979899";
 
+macro_rules! copy_3_dec_lut_bytes {
+    ($to:ident,$to_index:expr,$lut_index:expr) => {
+        $to[($to_index as usize) % $to.len()] = DEC_LOOKUP[($lut_index as usize) % DEC_LOOKUP.len()];
+        $to[($to_index as usize+1) % $to.len()] = DEC_LOOKUP[($lut_index as usize+1) % DEC_LOOKUP.len()];
+        $to[($to_index as usize+2) % $to.len()] = DEC_LOOKUP[($lut_index as usize+2) % DEC_LOOKUP.len()];
+    };
+}
+
 macro_rules! base_10 {
     ($number:ident, $index:ident, $string:ident) => {
         // Decode four characters at the same time
         while $number > 9999 {
             let rem = ($number % 10000) as u16;
             let (frst, scnd) = ((rem / 100) * 2, (rem % 100) * 2);
-            $string[$index-3..$index-1].copy_from_slice(&DEC_LOOKUP[frst as usize..frst as usize+2]);
-            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[scnd as usize..scnd as usize+2]);
+            copy_3_dec_lut_bytes!($string, $index-3, frst);
+            copy_3_dec_lut_bytes!($string, $index-1, scnd);
             $index = $index.wrapping_sub(4);
             $number /= 10000;
         }
-
         if $number > 999 {
             let (frst, scnd) = (($number / 100) * 2, ($number % 100) * 2);
-            $string[$index-3..$index-1].copy_from_slice(&DEC_LOOKUP[frst as usize..frst as usize+2]);
-            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[scnd as usize..scnd as usize+2]);
+            copy_3_dec_lut_bytes!($string, $index-3, frst);
+            copy_3_dec_lut_bytes!($string, $index-1, scnd);
             $index = $index.wrapping_sub(4);
         } else if $number > 99 {
             let section = ($number as u16 / 10) * 2;
-            $string[$index-2..$index].copy_from_slice(&DEC_LOOKUP[section as usize..section as usize+2]);
+            copy_3_dec_lut_bytes!($string, $index-2, section);
             $string[$index] = LOOKUP[($number % 10) as usize];
             $index = $index.wrapping_sub(3);
         } else if $number > 9 {
             $number *= 2;
-            $string[$index-1..$index+1].copy_from_slice(&DEC_LOOKUP[$number as usize..$number as usize+2]);
+            copy_3_dec_lut_bytes!($string, $index-1, $number);
             $index = $index.wrapping_sub(2);
         } else {
             $string[$index] = LOOKUP[$number as usize];
