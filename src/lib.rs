@@ -371,48 +371,56 @@ impl NumToA for i8 {
     }
 }
 
-impl NumToA for u8 {
-    fn numtoa(mut self, base: u8, string: &mut [u8]) -> &[u8] {
-        if cfg!(debug_assertions) {
-            if base == 10 {
-                debug_assert!(string.len() >= 3, "u8 conversions need at least 3 bytes");
-            }
-        }
-
-        let mut index = string.len() - 1;
-        if self == 0 {
-            string[index] = b'0';
-            return &string[index..];
-        }
-
+pub const fn numtoa_u8(mut num: u8, base: u8, string: &mut [u8]) -> &[u8] {
+    if cfg!(debug_assertions) {
         if base == 10 {
-            if self > 99 {
-                let section = (self / 10) * 2;
-                string[index-2..index].copy_from_slice(&DEC_LOOKUP[section as usize..section as usize+2]);
-                string[index] = LOOKUP[(self % 10) as usize];
-                index = index.wrapping_sub(3);
-            } else if self > 9 {
-                self *= 2;
-                string[index-1..index+1].copy_from_slice(&DEC_LOOKUP[self as usize..self as usize+2]);
-                index = index.wrapping_sub(2);
-            } else {
-                string[index] = LOOKUP[self as usize];
-                index = index.wrapping_sub(1);
-            }
-        } else {
-            while self != 0 {
-                let rem = self % base;
-                string[index] = LOOKUP[rem as usize];
-                index = index.wrapping_sub(1);
-                self /= base;
-            }
+            debug_assert!(string.len() >= 3, "u8 conversions need at least 3 bytes");
         }
+    }
 
-        &string[index.wrapping_add(1)..]
+    let mut index = string.len() - 1;
+    if num == 0 {
+        string[index] = b'0';
+        return string.split_at(index).1;
+    }
+
+    if base == 10 {
+        if num > 99 {
+            let section = (num / 10) * 2;
+            copy_3_dec_lut_bytes!(string, index-2, section);
+            string[index] = LOOKUP[(num % 10) as usize];
+            index = index.wrapping_sub(3);
+        } else if num > 9 {
+            num *= 2;
+            copy_3_dec_lut_bytes!(string, index-1, num);
+            index = index.wrapping_sub(2);
+        } else {
+            string[index] = LOOKUP[num as usize];
+            index = index.wrapping_sub(1);
+        }
+    } else {
+        while num != 0 {
+            let rem = num % base;
+            string[index] = LOOKUP[rem as usize];
+            index = index.wrapping_sub(1);
+            num /= base;
+        }
+    }
+
+    string.split_at(1).1
+}
+
+pub const fn numtoa_u8_str(num: u8, base: u8, string: &mut [u8]) -> &str {
+    unsafe { str::from_utf8_unchecked(numtoa_u8(num, base, string)) }
+}
+
+impl NumToA for u8 {
+    fn numtoa(self, base: u8, string: &mut [u8]) -> &[u8] {
+        numtoa_u8(self, base, string)
     }
 
     fn numtoa_str(self, base: Self, buf: &mut [u8]) -> &str {
-        unsafe { str::from_utf8_unchecked(self.numtoa(base, buf)) }
+        numtoa_u8_str(self, base, buf)
     }
 }
 
