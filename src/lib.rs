@@ -206,7 +206,7 @@ macro_rules! impl_unsigned_numtoa_for {
             string.split_at(index.wrapping_add(1)).1
         }
 
-        pub const fn $str_function_name(mut num: $type_name, base: $type_name, string: &mut [u8]) -> &str {
+        pub const fn $str_function_name(num: $type_name, base: $type_name, string: &mut [u8]) -> &str {
             unsafe { core::str::from_utf8_unchecked($core_function_name(num, base, string)) }
         }
 
@@ -223,7 +223,11 @@ macro_rules! impl_unsigned_numtoa_for {
 }
 
 macro_rules! impl_signed_numtoa_for {
-    ($type_name:ty) => {
+    (
+        $type_name:ty,
+        $core_function_name:ident,
+        $str_function_name:ident
+    ) => {
         impl NumToA for $type_name {
             fn numtoa(mut self, base: $type_name, string: &mut [u8]) -> &[u8] {
                 if cfg!(debug_assertions) {
@@ -285,11 +289,11 @@ macro_rules! impl_signed_numtoa_for {
     }
 }
 
-impl_signed_numtoa_for!(i16);
-impl_signed_numtoa_for!(i32);
-impl_signed_numtoa_for!(i64);
-impl_signed_numtoa_for!(i128);
-impl_signed_numtoa_for!(isize);
+impl_signed_numtoa_for!(i16,numtoa_i16,numtoa_str_i16);
+impl_signed_numtoa_for!(i32,numtoa_i32,numtoa_str_i32);
+impl_signed_numtoa_for!(i64,numtoa_i64,numtoa_str_i64);
+impl_signed_numtoa_for!(i128,numtoa_i128,numtoa_str_i128);
+impl_signed_numtoa_for!(isize,numtoa_isize,numtoa_str_isize);
 impl_unsigned_numtoa_for!(u16,numtoa_u16,numtoa_str_u16);
 impl_unsigned_numtoa_for!(u32,numtoa_u32,numtoa_str_u32);
 impl_unsigned_numtoa_for!(u64,numtoa_u64,numtoa_str_u64);
