@@ -74,7 +74,9 @@
 //! ```
 
 #![no_std]
+use core::fmt::{Debug, Display, Formatter};
 use core::mem::size_of;
+use core::ops::Deref;
 use core::str;
 
 /// Converts a number into a string representation, storing the conversion into a mutable byte slice.
@@ -123,6 +125,42 @@ const DEC_LOOKUP: &[u8; 200] = b"0001020304050607080910111213141516171819\
                                  4041424344454647484950515253545556575859\
                                  6061626364656667686970717273747576777879\
                                  8081828384858687888990919293949596979899";
+
+/// The result of a number conversion to ascii containing a string with maximum length `BUFFER_SIZE`
+pub struct AsciiNumber<const BUFFER_SIZE: usize> {
+    string: [u8; BUFFER_SIZE],
+    start: usize,
+}
+
+impl <const N: usize> AsciiNumber<N> {
+    /// Get the ascii representation of the number as a byte slice
+    pub const fn as_slice(&self) -> &[u8] {
+        self.string.split_at(self.start).1
+    }
+    /// Get the ascii representation of the number as a string slice
+    pub const fn as_str(&self) -> &str {
+        unsafe { core::str::from_utf8_unchecked(Self::as_slice(self)) }
+    }
+}
+
+impl <const N: usize> Deref for AsciiNumber<N> {
+    type Target = str;
+    fn deref(&self) -> &<Self as Deref>::Target {
+        self.as_str()
+    }
+}
+
+impl <const N: usize> Display for AsciiNumber<N> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), core::fmt::Error> {
+        Display::fmt(self.as_str(), f)
+    }
+}
+
+impl <const N: usize> Debug for AsciiNumber<N> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), core::fmt::Error> {
+        Debug::fmt(self.as_str(), f)
+    }
+}
 
 macro_rules! copy_2_dec_lut_bytes {
     ($to:ident,$to_index:expr,$lut_index:expr) => {
@@ -227,62 +265,70 @@ macro_rules! impl_signed_numtoa_for {
         $core_function_name:ident,
         $str_function_name:ident
     ) => {
-        impl NumToA for $type_name {
-            fn numtoa(mut self, base: $type_name, string: &mut [u8]) -> &[u8] {
-                if cfg!(debug_assertions) {
-                    if base == 10 {
-                        match size_of::<$type_name>() {
-                            2 => debug_assert!(string.len() >= 6,  "i16 base 10 conversions require at least 6 bytes"),
-                            4 => debug_assert!(string.len() >= 11, "i32 base 10 conversions require at least 11 bytes"),
-                            8 => debug_assert!(string.len() >= 19, "i64 base 10 conversions require at least 19 bytes"),
-                            16 => debug_assert!(string.len() >= 39, "i128 base 10 conversions require at least 39 bytes"),
-                            _ => unreachable!()
-                        }
-                    }
-                }
 
-                let mut index = string.len() - 1;
-                let mut is_negative = false;
-
-                if self < 0 {
-                    is_negative = true;
-                    self = match self.checked_abs() {
-                        Some(value) => value,
-                        None        => {
-                            let value = <$type_name>::max_value();
-                            string[index] = LOOKUP[((value % base + 1) % base) as usize];
-                            index -= 1;
-                            value / base + ((value % base == base - 1) as $type_name)
-                        }
-                    };
-                } else if self == 0 {
-                    string[index] = b'0';
-                    return string.split_at(index).1;
-                }
-
+        pub const fn $core_function_name(mut num: $type_name, base: $type_name, string: &mut [u8]) -> &[u8] {
+            if cfg!(debug_assertions) {
                 if base == 10 {
-                    // Convert using optimized base 10 algorithm
-                    base_10!(self, index, string);
-                } else {
-                    while self != 0 {
-                        let rem = self % base;
-                        string[index] = LOOKUP[rem as usize];
-                        index = index.wrapping_sub(1);
-                        self /= base;
+                    match size_of::<$type_name>() {
+                        2 => debug_assert!(string.len() >= 6,  "i16 base 10 conversions require at least 6 bytes"),
+                        4 => debug_assert!(string.len() >= 11, "i32 base 10 conversions require at least 11 bytes"),
+                        8 => debug_assert!(string.len() >= 19, "i64 base 10 conversions require at least 19 bytes"),
+                        16 => debug_assert!(string.len() >= 39, "i128 base 10 conversions require at least 39 bytes"),
+                        _ => unreachable!()
                     }
                 }
-
-                if is_negative {
-                    string[index] = b'-';
-                    index = index.wrapping_sub(1);
-                }
-
-                string.split_at(index.wrapping_add(1)).1
             }
 
+            let mut index = string.len() - 1;
+            let mut is_negative = false;
+
+            if num < 0 {
+                is_negative = true;
+                num = match num.checked_abs() {
+                    Some(value) => value,
+                    None        => {
+                        let value = <$type_name>::max_value();
+                        string[index] = LOOKUP[((value % base + 1) % base) as usize];
+                        index -= 1;
+                        value / base + ((value % base == base - 1) as $type_name)
+                    }
+                };
+            } else if num == 0 {
+                string[index] = b'0';
+                return string.split_at(index).1;
+            }
+
+            if base == 10 {
+                // Convert using optimized base 10 algorithm
+                base_10!(num, index, string);
+            } else {
+                while num != 0 {
+                    let rem = num % base;
+                    string[index] = LOOKUP[rem as usize];
+                    index = index.wrapping_sub(1);
+                    num /= base;
+                }
+            }
+
+            if is_negative {
+                string[index] = b'-';
+                index = index.wrapping_sub(1);
+            }
+
+            string.split_at(index.wrapping_add(1)).1
+        }
+
+        pub const fn $str_function_name(num: $type_name, base: $type_name, string: &mut [u8]) -> &str {
+            unsafe { core::str::from_utf8_unchecked($core_function_name(num, base, string)) }
+        }
+
+        impl NumToA for $type_name {
+            fn numtoa(self, base: $type_name, string: &mut [u8]) -> &[u8] {
+                $core_function_name(self, base, string)                
+            }
     
             fn numtoa_str(self, base: $type_name, buf: &mut [u8]) -> &str {
-                unsafe { str::from_utf8_unchecked(self.numtoa(base, buf)) }
+                $str_function_name(self, base, buf)
             }
         }
     }
@@ -423,23 +469,82 @@ impl NumToA for u8 {
     }
 }
 
+pub mod base10 {
+
+    use AsciiNumber;
+    use numtoa_u8;
+    use numtoa_u16;
+    use numtoa_u32;
+    use numtoa_u64;
+    use numtoa_u128;
+    use numtoa_i8;
+    use numtoa_i16;
+    use numtoa_i32;
+    use numtoa_i64;
+    use numtoa_i128;
+
+    macro_rules! impl_numtoa_base10_init_for {
+    (
+        $type_name:ty,
+        $core_function_name:ident,
+        $base10_function_name:ident,
+        $needed_buffer_size:expr) => {
+            pub const fn $base10_function_name(num: $type_name) -> AsciiNumber<$needed_buffer_size> {
+                let mut string = [0_u8; $needed_buffer_size];
+                let len = $core_function_name(num, 10, &mut string).len();
+                return AsciiNumber { string, start:$needed_buffer_size-len}
+            }
+        };
+    }
+
+    impl_numtoa_base10_init_for!(u8,numtoa_u8,u8,3); // 255
+    impl_numtoa_base10_init_for!(u16,numtoa_u16,u16,5); // 65535
+    impl_numtoa_base10_init_for!(u32,numtoa_u32,u32,10); // 4294967295
+    impl_numtoa_base10_init_for!(u64,numtoa_u64,u64,20); // 18446744073709551615
+    impl_numtoa_base10_init_for!(u128,numtoa_u128,u128,39); // 340282366920938463463374607431768211455
+    impl_numtoa_base10_init_for!(i8,numtoa_i8,i8,3); // -128
+    impl_numtoa_base10_init_for!(i16,numtoa_i16,i16,6); // -32768
+    impl_numtoa_base10_init_for!(i32,numtoa_i32,i32,11); // -2147483648
+    impl_numtoa_base10_init_for!(i64,numtoa_i64,i64,20); // -9223372036854775808
+    impl_numtoa_base10_init_for!(i128,numtoa_i128,i128,40); // -170141183460469231731687303715884105728
+
+}
+
 #[test]
-fn str_convenience() {
-    let mut buffer = [0u8; 20];
-    assert_eq!("256123", 256123.numtoa_str(10, &mut buffer));
+fn str_convenience_core() {
+    assert_eq!("256123", numtoa_i32_str(256123_i32, 10, &mut [0u8; 20]));
+}
+
+#[test]
+fn str_convenience_trait() {
+    assert_eq!("256123", 256123.numtoa_str(10, &mut [0u8; 20]));
+}
+
+#[test]
+fn str_convenience_base10() {
+    assert_eq!("256123", base10::i32(256123).as_str());
 }
 
 #[test]
 #[should_panic]
-fn base10_u8_array_too_small() {
-    let mut buffer = [0u8; 2];
-    let _ = 0u8.numtoa(10, &mut buffer);
+fn base10_u8_array_too_small_core() {
+    let _ = numtoa_u8(0_u8, 10, &mut [0u8; 2]);
 }
 
 #[test]
-fn base10_u8_array_just_right() {
-    let mut buffer = [0u8; 3];
-    let _ = 0u8.numtoa(10, &mut buffer);
+#[should_panic]
+fn base10_u8_array_too_small_trait() {
+    let _ = 0u8.numtoa(10, &mut [0u8; 2]);
+}
+
+#[test]
+fn base10_u8_array_just_right_core() {
+    let _ = numtoa_u8(0, 10, &mut [0u8; 3]);
+}
+
+#[test]
+fn base10_u8_array_just_right_trait() {
+    let _ = 0u8.numtoa(10, &mut [0u8; 3]);
 }
 
 #[test]
@@ -534,10 +639,23 @@ fn base10_u64_array_just_right() {
 }
 
 #[test]
-fn base10_i8_all() {
-    let mut buffer = [0u8; 4];
+fn base10_i8_all_core() {
     for i in i8::MIN..i8::MAX {
-        let _ = i.numtoa(10, &mut buffer);
+        let _ = numtoa_i8(i, 10, &mut [0u8; 4]);
+    }
+}
+
+#[test]
+fn base10_i8_all_trait() {
+    for i in i8::MIN..i8::MAX {
+        let _ = i.numtoa(10, &mut [0u8; 4]);
+    }
+}
+
+#[test]
+fn base10_i8_all_base10() {
+    for i in i8::MIN..i8::MAX {
+        let _ = base10::i8(i);
     }
 }
 
