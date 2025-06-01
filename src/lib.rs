@@ -126,9 +126,9 @@ const DEC_LOOKUP: &[u8; 200] = b"0001020304050607080910111213141516171819\
                                  6061626364656667686970717273747576777879\
                                  8081828384858687888990919293949596979899";
 
-/// The result of a number conversion to ascii containing a string with maximum length `BUFFER_SIZE`
-pub struct AsciiNumber<const BUFFER_SIZE: usize> {
-    string: [u8; BUFFER_SIZE],
+/// The result of a number conversion to ascii containing a string with at most length `N` bytes/characters
+pub struct AsciiNumber<const N: usize> {
+    string: [u8; N],
     start: usize,
 }
 
@@ -469,6 +469,23 @@ impl NumToA for u8 {
     }
 }
 
+macro_rules! impl_numtoa_base_n_init_for {
+(
+    $type_name:ty,
+    $base:expr,
+    $core_function_name:ident,
+    $base_n_function_name:ident,
+    $needed_buffer_size:expr) => {
+
+        pub const fn $base_n_function_name(num: $type_name) -> AsciiNumber<$needed_buffer_size> {
+            let mut string = [0_u8; $needed_buffer_size];
+            let len = $core_function_name(num, 10, &mut string).len();
+            return AsciiNumber { string, start:$needed_buffer_size-len}
+        }
+
+    };
+}
+
 pub mod base10 {
 
     use AsciiNumber;
@@ -483,32 +500,16 @@ pub mod base10 {
     use numtoa_i64;
     use numtoa_i128;
 
-    macro_rules! impl_numtoa_base10_init_for {
-    (
-        $type_name:ty,
-        $core_function_name:ident,
-        $base10_function_name:ident,
-        $needed_buffer_size:expr) => {
-
-            pub const fn $base10_function_name(num: $type_name) -> AsciiNumber<$needed_buffer_size> {
-                let mut string = [0_u8; $needed_buffer_size];
-                let len = $core_function_name(num, 10, &mut string).len();
-                return AsciiNumber { string, start:$needed_buffer_size-len}
-            }
-
-        };
-    }
-
-    impl_numtoa_base10_init_for!(u8,numtoa_u8,u8,3); // 255
-    impl_numtoa_base10_init_for!(u16,numtoa_u16,u16,5); // 65535
-    impl_numtoa_base10_init_for!(u32,numtoa_u32,u32,10); // 4294967295
-    impl_numtoa_base10_init_for!(u64,numtoa_u64,u64,20); // 18446744073709551615
-    impl_numtoa_base10_init_for!(u128,numtoa_u128,u128,39); // 340282366920938463463374607431768211455
-    impl_numtoa_base10_init_for!(i8,numtoa_i8,i8,4); // -128
-    impl_numtoa_base10_init_for!(i16,numtoa_i16,i16,6); // -32768
-    impl_numtoa_base10_init_for!(i32,numtoa_i32,i32,11); // -2147483648
-    impl_numtoa_base10_init_for!(i64,numtoa_i64,i64,20); // -9223372036854775808
-    impl_numtoa_base10_init_for!(i128,numtoa_i128,i128,40); // -170141183460469231731687303715884105728
+    impl_numtoa_base_n_init_for!(u8,10,numtoa_u8,u8,3); // 255
+    impl_numtoa_base_n_init_for!(u16,10,numtoa_u16,u16,5); // 65535
+    impl_numtoa_base_n_init_for!(u32,10,numtoa_u32,u32,10); // 4294967295
+    impl_numtoa_base_n_init_for!(u64,10,numtoa_u64,u64,20); // 18446744073709551615
+    impl_numtoa_base_n_init_for!(u128,10,numtoa_u128,u128,39); // 340282366920938463463374607431768211455
+    impl_numtoa_base_n_init_for!(i8,10,numtoa_i8,i8,4); // -128
+    impl_numtoa_base_n_init_for!(i16,10,numtoa_i16,i16,6); // -32768
+    impl_numtoa_base_n_init_for!(i32,10,numtoa_i32,i32,11); // -2147483648
+    impl_numtoa_base_n_init_for!(i64,10,numtoa_i64,i64,20); // -9223372036854775808
+    impl_numtoa_base_n_init_for!(i128,10,numtoa_i128,i128,40); // -170141183460469231731687303715884105728
 
 }
 
