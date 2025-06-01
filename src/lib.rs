@@ -300,66 +300,74 @@ impl_unsigned_numtoa_for!(u64,numtoa_u64,numtoa_str_u64);
 impl_unsigned_numtoa_for!(u128,numtoa_u128,numtoa_str_u128);
 impl_unsigned_numtoa_for!(usize,numtoa_usize,numtoa_str_usize);
 
-impl NumToA for i8 {
-    fn numtoa(mut self, base: i8, string: &mut [u8]) -> &[u8] {
-        if cfg!(debug_assertions) {
-            if base == 10 {
-                debug_assert!(string.len() >= 4, "i8 conversions need at least 4 bytes");
-            }
-        }
-
-        let mut index = string.len() - 1;
-        let mut is_negative = false;
-
-        if self < 0 {
-            is_negative = true;
-            self = match self.checked_abs() {
-                Some(value) => value,
-                None        => {
-                    let value = <i8>::max_value();
-                    string[index] = LOOKUP[((value % base + 1) % base) as usize];
-                    index -= 1;
-                    value / base + ((value % base == base - 1) as i8)
-                }
-            };
-        } else if self == 0 {
-            string[index] = b'0';
-            return &string[index..];
-        }
-
+pub const fn numtoa_i8(mut num: i8, base: i8, string: &mut [u8]) -> &[u8] {
+    if cfg!(debug_assertions) {
         if base == 10 {
-            if self > 99 {
-                let section = (self / 10) * 2;
-                string[index-2..index].copy_from_slice(&DEC_LOOKUP[section as usize..section as usize+2]);
-                string[index] = LOOKUP[(self % 10) as usize];
-                index = index.wrapping_sub(3);
-            } else if self > 9 {
-                let idx = self as usize * 2;
-                string[index-1..index+1].copy_from_slice(&DEC_LOOKUP[idx..idx+2]);
-                index = index.wrapping_sub(2);
-             } else {
-                string[index] = LOOKUP[self as usize];
-                index = index.wrapping_sub(1);
-            }
-        } else {
-            while self != 0 {
-                let rem = self % base;
-                string[index] = LOOKUP[rem as usize];
-                index = index.wrapping_sub(1);
-                self /= base;
-            }
+            debug_assert!(string.len() >= 4, "i8 conversions need at least 4 bytes");
         }
+    }
 
-        if is_negative {
-            string[index] = b'-';
+    let mut index = string.len() - 1;
+    let mut is_negative = false;
+
+    if num < 0 {
+        is_negative = true;
+        num = match num.checked_abs() {
+            Some(value) => value,
+            None        => {
+                let value = <i8>::max_value();
+                string[index] = LOOKUP[((value % base + 1) % base) as usize];
+                index -= 1;
+                value / base + ((value % base == base - 1) as i8)
+            }
+        };
+    } else if num == 0 {
+        string[index] = b'0';
+        return string.split_at(index).1;
+    }
+
+    if base == 10 {
+        if num > 99 {
+            let section = (num / 10) * 2;
+            copy_3_dec_lut_bytes!(string, index-2, section);
+            string[index] = LOOKUP[(num % 10) as usize];
+            index = index.wrapping_sub(3);
+        } else if num > 9 {
+            let idx = num as usize * 2;
+            copy_3_dec_lut_bytes!(string, index-1, idx);
+            index = index.wrapping_sub(2);
+            } else {
+            string[index] = LOOKUP[num as usize];
             index = index.wrapping_sub(1);
         }
+    } else {
+        while num != 0 {
+            let rem = num % base;
+            string[index] = LOOKUP[rem as usize];
+            index = index.wrapping_sub(1);
+            num /= base;
+        }
+    }
 
-        &string[index.wrapping_add(1)..]
+    if is_negative {
+        string[index] = b'-';
+        index = index.wrapping_sub(1);
+    }
+
+    string.split_at(index.wrapping_add(1)).1
+}
+
+pub const fn numtoa_i8_str(num: i8, base: i8, string: &mut [u8]) -> &str {
+    unsafe { str::from_utf8_unchecked(numtoa_i8(num, base, string)) }
+}
+
+impl NumToA for i8 {
+    fn numtoa(self, base: i8, string: &mut [u8]) -> &[u8] {
+        numtoa_i8(self, base, string)
     }
 
     fn numtoa_str(self, base: Self, buf: &mut [u8]) -> &str {
-        unsafe { str::from_utf8_unchecked(self.numtoa(base, buf)) }
+        numtoa_i8_str(self, base, buf)
     }
 }
 
