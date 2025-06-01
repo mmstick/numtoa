@@ -165,58 +165,70 @@ macro_rules! base_10 {
 }
 
 macro_rules! impl_unsigned_numtoa_for {
-    ($t:ty) => {
-        impl NumToA for $t {
-            fn numtoa(mut self, base: $t, string: &mut [u8]) -> &[u8] {
-                // Check if the buffer is large enough and panic on debug builds if it isn't
-                if cfg!(debug_assertions) {
-                    if base == 10 {
-                        match size_of::<$t>() {
-                            2 => debug_assert!(string.len() >= 5,  "u16 base 10 conversions require at least 5 bytes"),
-                            4 => debug_assert!(string.len() >= 10, "u32 base 10 conversions require at least 10 bytes"),
-                            8 => debug_assert!(string.len() >= 20, "u64 base 10 conversions require at least 20 bytes"),
-                            16 => debug_assert!(string.len() >= 39, "u128 base 10 conversions require at least 39 bytes"),
-                            _ => unreachable!()
-                        }
-                    }
-                }
+    (
+        $type_name:ty,
+        $core_function_name:ident,
+        $str_function_name:ident
+    ) => {
 
-                let mut index = string.len() - 1;
-                if self == 0 {
-                    string[index] = b'0';
-                    return string.split_at(index).1;
-                }
-
+        pub const fn $core_function_name(mut num: $type_name, base: $type_name, string: &mut [u8]) -> &[u8] {
+            // Check if the buffer is large enough and panic on debug builds if it isn't
+            if cfg!(debug_assertions) {
                 if base == 10 {
-                    // Convert using optimized base 10 algorithm
-                    base_10!(self, index, string);
-                } else {
-                    while self != 0 {
-                        let rem = self % base;
-                        string[index] = LOOKUP[rem as usize];
-                        index = index.wrapping_sub(1);
-                        self /= base;
+                    match size_of::<$type_name>() {
+                        2 => debug_assert!(string.len() >= 5,  "u16 base 10 conversions require at least 5 bytes"),
+                        4 => debug_assert!(string.len() >= 10, "u32 base 10 conversions require at least 10 bytes"),
+                        8 => debug_assert!(string.len() >= 20, "u64 base 10 conversions require at least 20 bytes"),
+                        16 => debug_assert!(string.len() >= 39, "u128 base 10 conversions require at least 39 bytes"),
+                        _ => unreachable!()
                     }
                 }
-
-                string.split_at(index.wrapping_add(1)).1
             }
 
-    
-            fn numtoa_str(self, base: $t, buf: &mut [u8]) -> &str {
-                unsafe { str::from_utf8_unchecked(self.numtoa(base, buf)) }
+            let mut index = string.len() - 1;
+            if num == 0 {
+                string[index] = b'0';
+                return string.split_at(index).1;
+            }
+
+            if base == 10 {
+                // Convert using optimized base 10 algorithm
+                base_10!(num, index, string);
+            } else {
+                while num != 0 {
+                    let rem = num % base;
+                    string[index] = LOOKUP[rem as usize];
+                    index = index.wrapping_sub(1);
+                    num /= base;
+                }
+            }
+
+            string.split_at(index.wrapping_add(1)).1
+        }
+
+        pub const fn $str_function_name(mut num: $type_name, base: $type_name, string: &mut [u8]) -> &str {
+            unsafe { core::str::from_utf8_unchecked($core_function_name(num, base, string)) }
+        }
+
+        impl NumToA for $type_name {
+            fn numtoa(self, base: $type_name, string: &mut [u8]) -> &[u8] {
+               $core_function_name(self, base, string)
+            }
+            fn numtoa_str(self, base: $type_name, buf: &mut [u8]) -> &str {
+                $str_function_name(self, base, buf)
             }
         }
+
     }
 }
 
 macro_rules! impl_signed_numtoa_for {
-    ($t:ty) => {
-        impl NumToA for $t {
-            fn numtoa(mut self, base: $t, string: &mut [u8]) -> &[u8] {
+    ($type_name:ty) => {
+        impl NumToA for $type_name {
+            fn numtoa(mut self, base: $type_name, string: &mut [u8]) -> &[u8] {
                 if cfg!(debug_assertions) {
                     if base == 10 {
-                        match size_of::<$t>() {
+                        match size_of::<$type_name>() {
                             2 => debug_assert!(string.len() >= 6,  "i16 base 10 conversions require at least 6 bytes"),
                             4 => debug_assert!(string.len() >= 11, "i32 base 10 conversions require at least 11 bytes"),
                             8 => debug_assert!(string.len() >= 19, "i64 base 10 conversions require at least 19 bytes"),
@@ -234,10 +246,10 @@ macro_rules! impl_signed_numtoa_for {
                     self = match self.checked_abs() {
                         Some(value) => value,
                         None        => {
-                            let value = <$t>::max_value();
+                            let value = <$type_name>::max_value();
                             string[index] = LOOKUP[((value % base + 1) % base) as usize];
                             index -= 1;
-                            value / base + ((value % base == base - 1) as $t)
+                            value / base + ((value % base == base - 1) as $type_name)
                         }
                     };
                 } else if self == 0 {
@@ -266,7 +278,7 @@ macro_rules! impl_signed_numtoa_for {
             }
 
     
-            fn numtoa_str(self, base: $t, buf: &mut [u8]) -> &str {
+            fn numtoa_str(self, base: $type_name, buf: &mut [u8]) -> &str {
                 unsafe { str::from_utf8_unchecked(self.numtoa(base, buf)) }
             }
         }
@@ -278,11 +290,11 @@ impl_signed_numtoa_for!(i32);
 impl_signed_numtoa_for!(i64);
 impl_signed_numtoa_for!(i128);
 impl_signed_numtoa_for!(isize);
-impl_unsigned_numtoa_for!(u16);
-impl_unsigned_numtoa_for!(u32);
-impl_unsigned_numtoa_for!(u64);
-impl_unsigned_numtoa_for!(u128);
-impl_unsigned_numtoa_for!(usize);
+impl_unsigned_numtoa_for!(u16,numtoa_u16,numtoa_str_u16);
+impl_unsigned_numtoa_for!(u32,numtoa_u32,numtoa_str_u32);
+impl_unsigned_numtoa_for!(u64,numtoa_u64,numtoa_str_u64);
+impl_unsigned_numtoa_for!(u128,numtoa_u128,numtoa_str_u128);
+impl_unsigned_numtoa_for!(usize,numtoa_usize,numtoa_str_usize);
 
 impl NumToA for i8 {
     fn numtoa(mut self, base: i8, string: &mut [u8]) -> &[u8] {
