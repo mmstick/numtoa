@@ -13,6 +13,10 @@ In addition to supporting the standard base 10 conversion, this implementation a
 your choice. Therefore, if you want a binary representation, set the base to 2. If you want hexadecimal, set the
 base to 16.
 
+## Supports Const Contexts
+
+This library's API includes `const` functions that can be used to convert numbers into their string representation at compile time, allowing developers to build smaller & faster executables.
+
 ## `&str` Example
 
 ```rust
