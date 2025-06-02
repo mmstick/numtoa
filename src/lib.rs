@@ -479,7 +479,7 @@ macro_rules! impl_numtoa_base_n_init_for {
 
         pub const fn $base_n_function_name(num: $type_name) -> AsciiNumber<$needed_buffer_size> {
             let mut string = [0_u8; $needed_buffer_size];
-            let len = $core_function_name(num, 10, &mut string).len();
+            let len = $core_function_name(num, $base, &mut string).len();
             return AsciiNumber { string, start:$needed_buffer_size-len}
         }
 
