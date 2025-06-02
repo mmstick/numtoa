@@ -475,12 +475,19 @@ macro_rules! impl_numtoa_base_n_init_for {
     $base:expr,
     $core_function_name:ident,
     $base_n_function_name:ident,
+    $base_n_constant_function_name:ident,
     $needed_buffer_size:expr) => {
 
+        /// Runtime or compile-time initialization of ascii representation
         pub const fn $base_n_function_name(num: $type_name) -> AsciiNumber<$needed_buffer_size> {
             let mut string = [0_u8; $needed_buffer_size];
             let len = $core_function_name(num, $base, &mut string).len();
             return AsciiNumber { string, start:$needed_buffer_size-len}
+        }
+
+        /// Guaranteed compile-time initialization of ascii representation
+        pub const fn $base_n_constant_function_name<const NUM: $type_name>() -> AsciiNumber<$needed_buffer_size> {
+            const { $base_n_function_name(NUM) }
         }
 
     };
@@ -500,16 +507,16 @@ pub mod base10 {
     use numtoa_i64;
     use numtoa_i128;
 
-    impl_numtoa_base_n_init_for!(u8,10,numtoa_u8,u8,3); // 255
-    impl_numtoa_base_n_init_for!(u16,10,numtoa_u16,u16,5); // 65535
-    impl_numtoa_base_n_init_for!(u32,10,numtoa_u32,u32,10); // 4294967295
-    impl_numtoa_base_n_init_for!(u64,10,numtoa_u64,u64,20); // 18446744073709551615
-    impl_numtoa_base_n_init_for!(u128,10,numtoa_u128,u128,39); // 340282366920938463463374607431768211455
-    impl_numtoa_base_n_init_for!(i8,10,numtoa_i8,i8,4); // -128
-    impl_numtoa_base_n_init_for!(i16,10,numtoa_i16,i16,6); // -32768
-    impl_numtoa_base_n_init_for!(i32,10,numtoa_i32,i32,11); // -2147483648
-    impl_numtoa_base_n_init_for!(i64,10,numtoa_i64,i64,20); // -9223372036854775808
-    impl_numtoa_base_n_init_for!(i128,10,numtoa_i128,i128,40); // -170141183460469231731687303715884105728
+    impl_numtoa_base_n_init_for!(u8,10,numtoa_u8,u8,u8_constant,3); // 255
+    impl_numtoa_base_n_init_for!(u16,10,numtoa_u16,u16,u16_constant,5); // 65535
+    impl_numtoa_base_n_init_for!(u32,10,numtoa_u32,u32,u32_constant,10); // 4294967295
+    impl_numtoa_base_n_init_for!(u64,10,numtoa_u64,u64,u64_constant,20); // 18446744073709551615
+    impl_numtoa_base_n_init_for!(u128,10,numtoa_u128,u128,u128_constant,39); // 340282366920938463463374607431768211455
+    impl_numtoa_base_n_init_for!(i8,10,numtoa_i8,i8,i8_constant,4); // -128
+    impl_numtoa_base_n_init_for!(i16,10,numtoa_i16,i16,i16_constant,6); // -32768
+    impl_numtoa_base_n_init_for!(i32,10,numtoa_i32,i32,i32_constant,11); // -2147483648
+    impl_numtoa_base_n_init_for!(i64,10,numtoa_i64,i64,i64_constant,20); // -9223372036854775808
+    impl_numtoa_base_n_init_for!(i128,10,numtoa_i128,i128,i128_constant,40); // -170141183460469231731687303715884105728
 
 }
 
@@ -524,8 +531,13 @@ fn str_convenience_trait() {
 }
 
 #[test]
-fn str_convenience_base10() {
+fn str_convenience_base10init() {
     assert_eq!("256123", base10::i32(256123).as_str());
+}
+
+#[test]
+fn str_convenience_base10constant() {
+    assert_eq!("256123", base10::i32_constant::<256123>().as_str());
 }
 
 #[test]
@@ -656,7 +668,7 @@ fn base10_i8_all_trait() {
 }
 
 #[test]
-fn base10_i8_all_base10() {
+fn base10_i8_all_base10init() {
     for i in i8::MIN..i8::MAX {
         let _ = base10::i8(i);
     }
