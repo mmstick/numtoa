@@ -141,6 +141,10 @@ impl <const N: usize> AsciiNumber<N> {
     pub const fn as_str(&self) -> &str {
         unsafe { core::str::from_utf8_unchecked(Self::as_slice(self)) }
     }
+    /// Consume this AsciiNumber to return the underlying buffer & string start position
+    pub const fn into_inner(self) -> ([u8;N], usize) {
+        (self.string, self.start)
+    }
 }
 
 impl <const N: usize> Deref for AsciiNumber<N> {
