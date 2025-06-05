@@ -737,6 +737,27 @@ fn base10_u8_all_base10() {
 }
 
 #[test]
+fn base16_u8_all_core() {
+    for i in u8::MIN..u8::MAX {
+        let _ = numtoa_u8(i, 16, &mut [0u8; 3]);
+    }
+}
+
+#[test]
+fn base16_u8_all_trait() {
+    for i in u8::MIN..u8::MAX {
+        let _ = i.numtoa(16, &mut [0u8; 3]);
+    }
+}
+
+#[test]
+fn base16_u8_all_base10() {
+    for i in u8::MIN..u8::MAX {
+        let _ = base16::u8(i);
+    }
+}
+
+#[test]
 #[should_panic]
 fn base10_i128_array_too_small() {
     let mut buffer = [0u8; 38];
