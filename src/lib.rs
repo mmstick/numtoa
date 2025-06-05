@@ -215,7 +215,7 @@ macro_rules! impl_unsigned_numtoa_for {
         pub const fn $core_function_name(mut num: $type_name, base: $type_name, string: &mut [u8]) -> &[u8] {
             // Check if the buffer is large enough and panic on debug builds if it isn't
             if cfg!(debug_assertions) {
-                debug_assert!(base <= 36, "unsupported base");
+                debug_assert!(base as usize <= const { LOOKUP.len() }, "unsupported base");
                 if base == 10 {
                     match size_of::<$type_name>() {
                         2 => debug_assert!(string.len() >= 5,  "u16 base 10 conversions require at least 5 bytes"),
@@ -273,6 +273,7 @@ macro_rules! impl_signed_numtoa_for {
 
         pub const fn $core_function_name(mut num: $type_name, base: $type_name, string: &mut [u8]) -> &[u8] {
             if cfg!(debug_assertions) {
+                debug_assert!(base as usize <= const { LOOKUP.len() }, "unsupported base");
                 if base == 10 {
                     match size_of::<$type_name>() {
                         2 => debug_assert!(string.len() >= 6,  "i16 base 10 conversions require at least 6 bytes"),
@@ -352,6 +353,7 @@ impl_unsigned_numtoa_for!(usize,numtoa_usize,numtoa_usize_str);
 
 pub const fn numtoa_i8(mut num: i8, base: i8, string: &mut [u8]) -> &[u8] {
     if cfg!(debug_assertions) {
+        debug_assert!(base as usize <= const { LOOKUP.len() }, "unsupported base");
         if base == 10 {
             debug_assert!(string.len() >= 4, "i8 conversions need at least 4 bytes");
         }
@@ -423,6 +425,7 @@ impl NumToA for i8 {
 
 pub const fn numtoa_u8(mut num: u8, base: u8, string: &mut [u8]) -> &[u8] {
     if cfg!(debug_assertions) {
+        debug_assert!(base as usize <= const { LOOKUP.len() }, "unsupported base");
         if base == 10 {
             debug_assert!(string.len() >= 3, "u8 conversions need at least 3 bytes");
         }
@@ -553,7 +556,7 @@ fn sanity() {
 #[test]
 #[should_panic]
 fn unsupported_base() {
-    assert_eq!(b"256123", numtoa_i32(256123_i32, 37, &mut [0u8; 20]));
+    numtoa_i32(36, 37, &mut [0u8; 100]);
 }
 
 #[test]
