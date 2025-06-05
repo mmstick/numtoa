@@ -751,7 +751,7 @@ fn base16_u8_all_trait() {
 }
 
 #[test]
-fn base16_u8_all_base10() {
+fn base16_u8_all_base16() {
     for i in u8::MIN..u8::MAX {
         let _ = base16::u8(i);
     }
