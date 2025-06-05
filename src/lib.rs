@@ -695,10 +695,44 @@ fn base10_i8_all_base10() {
 }
 
 #[test]
-fn base10_u8_all() {
-    let mut buffer = [0u8; 3];
+fn base16_i8_all_core() {
+    for i in i8::MIN..i8::MAX {
+        let _ = numtoa_i8(i, 16, &mut [0u8; 3]);
+    }
+}
+
+#[test]
+fn base16_i8_all_trait() {
+    for i in i8::MIN..i8::MAX {
+        let _ = i.numtoa(16, &mut [0u8; 3]);
+    }
+}
+
+#[test]
+fn base16_i8_all_base16() {
+    for i in i8::MIN..i8::MAX {
+        let _ = base16::i8(i);
+    }
+}
+
+#[test]
+fn base10_u8_all_core() {
     for i in u8::MIN..u8::MAX {
-        let _ = i.numtoa(10, &mut buffer);
+        let _ = numtoa_u8(i, 10, &mut [0u8; 3]);
+    }
+}
+
+#[test]
+fn base10_u8_all_trait() {
+    for i in u8::MIN..u8::MAX {
+        let _ = i.numtoa(10, &mut [0u8; 3]);
+    }
+}
+
+#[test]
+fn base10_u8_all_base10() {
+    for i in u8::MIN..u8::MAX {
+        let _ = base10::u8(i);
     }
 }
 
