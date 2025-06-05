@@ -479,12 +479,20 @@ macro_rules! impl_numtoa_base_n_init_for {
     $base:expr,
     $core_function_name:ident,
     $base_n_function_name:ident,
+    $padded_function_name:ident,
     $needed_buffer_size:expr) => {
 
         pub const fn $base_n_function_name(num: $type_name) -> AsciiNumber<$needed_buffer_size> {
             let mut string = [0_u8; $needed_buffer_size];
-            let len = $core_function_name(num, $base, &mut string).len();
-            return AsciiNumber { string, start:$needed_buffer_size-len}
+            let start = $needed_buffer_size - $core_function_name(num, $base, &mut string).len();
+            return AsciiNumber { string, start }
+        }
+
+        pub const fn $padded_function_name<const LENGTH: usize>(num: $type_name, padding: u8) -> AsciiNumber<LENGTH> {
+            const { assert!(LENGTH >= $needed_buffer_size) }
+            let mut string = [padding; LENGTH];
+            let _ = $core_function_name(num, $base, &mut string);
+            return AsciiNumber { string, start: 0 }
         }
 
     };
@@ -504,16 +512,16 @@ pub mod base10 {
     use numtoa_i64;
     use numtoa_i128;
 
-    impl_numtoa_base_n_init_for!(u8,10,numtoa_u8,u8,3); // 255
-    impl_numtoa_base_n_init_for!(u16,10,numtoa_u16,u16,5); // 65535
-    impl_numtoa_base_n_init_for!(u32,10,numtoa_u32,u32,10); // 4294967295
-    impl_numtoa_base_n_init_for!(u64,10,numtoa_u64,u64,20); // 18446744073709551615
-    impl_numtoa_base_n_init_for!(u128,10,numtoa_u128,u128,39); // 340282366920938463463374607431768211455
-    impl_numtoa_base_n_init_for!(i8,10,numtoa_i8,i8,4); // -128
-    impl_numtoa_base_n_init_for!(i16,10,numtoa_i16,i16,6); // -32768
-    impl_numtoa_base_n_init_for!(i32,10,numtoa_i32,i32,11); // -2147483648
-    impl_numtoa_base_n_init_for!(i64,10,numtoa_i64,i64,20); // -9223372036854775808
-    impl_numtoa_base_n_init_for!(i128,10,numtoa_i128,i128,40); // -170141183460469231731687303715884105728
+    impl_numtoa_base_n_init_for!(u8,10,numtoa_u8,u8,u8_padded,3); // 255
+    impl_numtoa_base_n_init_for!(u16,10,numtoa_u16,u16,u16_padded,5); // 65535
+    impl_numtoa_base_n_init_for!(u32,10,numtoa_u32,u32,u32_padded,10); // 4294967295
+    impl_numtoa_base_n_init_for!(u64,10,numtoa_u64,u64,u64_padded,20); // 18446744073709551615
+    impl_numtoa_base_n_init_for!(u128,10,numtoa_u128,u128,u128_padded,39); // 340282366920938463463374607431768211455
+    impl_numtoa_base_n_init_for!(i8,10,numtoa_i8,i8,i8_padded,4); // -128
+    impl_numtoa_base_n_init_for!(i16,10,numtoa_i16,i16,i16_padded,6); // -32768
+    impl_numtoa_base_n_init_for!(i32,10,numtoa_i32,i32,i32_padded,11); // -2147483648
+    impl_numtoa_base_n_init_for!(i64,10,numtoa_i64,i64,i64_padded,20); // -9223372036854775808
+    impl_numtoa_base_n_init_for!(i128,10,numtoa_i128,i128,i128_padded,40); // -170141183460469231731687303715884105728
 
 }
 
@@ -531,16 +539,16 @@ pub mod base16 {
     use numtoa_i64;
     use numtoa_i128;
 
-    impl_numtoa_base_n_init_for!(u8,16,numtoa_u8,u8,2);
-    impl_numtoa_base_n_init_for!(u16,16,numtoa_u16,u16,4);
-    impl_numtoa_base_n_init_for!(u32,16,numtoa_u32,u32,8);
-    impl_numtoa_base_n_init_for!(u64,16,numtoa_u64,u64,16);
-    impl_numtoa_base_n_init_for!(u128,16,numtoa_u128,u128,32);
-    impl_numtoa_base_n_init_for!(i8,16,numtoa_i8,i8,3);
-    impl_numtoa_base_n_init_for!(i16,16,numtoa_i16,i16,5);
-    impl_numtoa_base_n_init_for!(i32,16,numtoa_i32,i32,9);
-    impl_numtoa_base_n_init_for!(i64,16,numtoa_i64,i64,17);
-    impl_numtoa_base_n_init_for!(i128,16,numtoa_i128,i128,33);
+    impl_numtoa_base_n_init_for!(u8,16,numtoa_u8,u8,u8_padded,2);
+    impl_numtoa_base_n_init_for!(u16,16,numtoa_u16,u16,u16_padded,4);
+    impl_numtoa_base_n_init_for!(u32,16,numtoa_u32,u32,u32_padded,8);
+    impl_numtoa_base_n_init_for!(u64,16,numtoa_u64,u64,u64_padded,16);
+    impl_numtoa_base_n_init_for!(u128,16,numtoa_u128,u128,u128_padded,32);
+    impl_numtoa_base_n_init_for!(i8,16,numtoa_i8,i8,i8_padded,3);
+    impl_numtoa_base_n_init_for!(i16,16,numtoa_i16,i16,i16_padded,5);
+    impl_numtoa_base_n_init_for!(i32,16,numtoa_i32,i32,i32_padded,9);
+    impl_numtoa_base_n_init_for!(i64,16,numtoa_i64,i64,i64_padded,17);
+    impl_numtoa_base_n_init_for!(i128,16,numtoa_i128,i128,i128_padded,33);
 
 }
 
@@ -560,8 +568,25 @@ fn str_convenience_base10() {
 }
 
 #[test]
+fn str_convenience_base10_padded() {
+    assert_eq!("00000000000000256123", base10::i32_padded::<20>(256123, b'0').as_str());
+}
+
+#[test]
 fn str_convenience_base16() {
     assert_eq!("3E87B", base16::i32(256123).as_str());
+}
+
+#[test]
+fn str_convenience_base16_padded() {
+    assert_eq!("0000000000000003E87B", base16::i32_padded::<20>(256123, b'0').as_str());
+}
+
+
+#[test]
+fn str_convenience_wacky_padding() {
+    assert_eq!("##############-3E87B", base16::i32_padded::<20>(-256123, b'#').as_str());
+    assert_eq!("@@@@@@@@@@@-111", base10::i8_padded::<15>(-111, b'@').as_str());
 }
 
 #[test]
