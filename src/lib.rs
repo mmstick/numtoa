@@ -215,6 +215,7 @@ macro_rules! impl_unsigned_numtoa_for {
         pub const fn $core_function_name(mut num: $type_name, base: $type_name, string: &mut [u8]) -> &[u8] {
             // Check if the buffer is large enough and panic on debug builds if it isn't
             if cfg!(debug_assertions) {
+                debug_assert!(base <= 36, "unsupported base");
                 if base == 10 {
                     match size_of::<$type_name>() {
                         2 => debug_assert!(string.len() >= 5,  "u16 base 10 conversions require at least 5 bytes"),
@@ -542,6 +543,17 @@ pub mod base16 {
     impl_numtoa_base_n_init_for!(i64,16,numtoa_i64,i64,17);
     impl_numtoa_base_n_init_for!(i128,16,numtoa_i128,i128,33);
 
+}
+
+#[test]
+fn sanity() {
+    assert_eq!(b"256123", numtoa_i32(256123_i32, 10, &mut [0u8; 20]));
+}
+
+#[test]
+#[should_panic]
+fn unsupported_base() {
+    assert_eq!(b"256123", numtoa_i32(256123_i32, 37, &mut [0u8; 20]));
 }
 
 #[test]
