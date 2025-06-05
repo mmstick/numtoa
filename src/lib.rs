@@ -513,6 +513,33 @@ pub mod base10 {
 
 }
 
+pub mod base16 {
+
+    use AsciiNumber;
+    use numtoa_u8;
+    use numtoa_u16;
+    use numtoa_u32;
+    use numtoa_u64;
+    use numtoa_u128;
+    use numtoa_i8;
+    use numtoa_i16;
+    use numtoa_i32;
+    use numtoa_i64;
+    use numtoa_i128;
+
+    impl_numtoa_base_n_init_for!(u8,16,numtoa_u8,u8,2);
+    impl_numtoa_base_n_init_for!(u16,16,numtoa_u16,u16,4);
+    impl_numtoa_base_n_init_for!(u32,16,numtoa_u32,u32,8);
+    impl_numtoa_base_n_init_for!(u64,16,numtoa_u64,u64,16);
+    impl_numtoa_base_n_init_for!(u128,16,numtoa_u128,u128,32);
+    impl_numtoa_base_n_init_for!(i8,16,numtoa_i8,i8,3);
+    impl_numtoa_base_n_init_for!(i16,16,numtoa_i16,i16,5);
+    impl_numtoa_base_n_init_for!(i32,16,numtoa_i32,i32,9);
+    impl_numtoa_base_n_init_for!(i64,16,numtoa_i64,i64,17);
+    impl_numtoa_base_n_init_for!(i128,16,numtoa_i128,i128,33);
+
+}
+
 #[test]
 fn str_convenience_core() {
     assert_eq!("256123", numtoa_i32_str(256123_i32, 10, &mut [0u8; 20]));
@@ -526,6 +553,11 @@ fn str_convenience_trait() {
 #[test]
 fn str_convenience_base10() {
     assert_eq!("256123", base10::i32(256123).as_str());
+}
+
+#[test]
+fn str_convenience_base16() {
+    assert_eq!("3E87B", base16::i32(256123).as_str());
 }
 
 #[test]
