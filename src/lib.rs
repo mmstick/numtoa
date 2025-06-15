@@ -558,7 +558,7 @@ fn sanity() {
 
 #[test]
 #[should_panic]
-fn base_too_law() {
+fn base_too_low() {
     numtoa_i32(50, 1, &mut [0u8; 100]);
 }
 
