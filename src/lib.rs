@@ -560,13 +560,13 @@ fn sanity() {
 
 #[test]
 #[should_panic]
-fn one_base() {
+fn base_too_law() {
     numtoa_i32(50, 1, &mut [0u8; 100]);
 }
 
 #[test]
 #[should_panic]
-fn unsupported_base() {
+fn base_too_high() {
     numtoa_i32(36, 37, &mut [0u8; 100]);
 }
 
