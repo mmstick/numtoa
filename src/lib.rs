@@ -126,6 +126,9 @@ const DEC_LOOKUP: &[u8; 200] = b"0001020304050607080910111213141516171819\
                                  6061626364656667686970717273747576777879\
                                  8081828384858687888990919293949596979899";
 
+// The maximum supported base given the standard alphabet
+const MAX_SUPPORTED_BASE: u128 = LOOKUP.len() as u128;
+
 /// The result of a number conversion to ascii containing a string with at most length `N` bytes/characters
 pub struct AsciiNumber<const N: usize> {
     string: [u8; N],
@@ -215,7 +218,7 @@ macro_rules! impl_unsigned_numtoa_for {
         pub const fn $core_function_name(mut num: $type_name, base: $type_name, string: &mut [u8]) -> &[u8] {
             // Check if the buffer is large enough and panic on debug builds if it isn't
             if cfg!(debug_assertions) {
-                debug_assert!(base as usize <= const { LOOKUP.len() }, "unsupported base");
+                debug_assert!(base as u128 <= MAX_SUPPORTED_BASE, "unsupported base");
                 if base == 10 {
                     match size_of::<$type_name>() {
                         2 => debug_assert!(string.len() >= 5,  "u16 base 10 conversions require at least 5 bytes"),
@@ -273,7 +276,7 @@ macro_rules! impl_signed_numtoa_for {
 
         pub const fn $core_function_name(mut num: $type_name, base: $type_name, string: &mut [u8]) -> &[u8] {
             if cfg!(debug_assertions) {
-                debug_assert!(base as usize <= const { LOOKUP.len() }, "unsupported base");
+                debug_assert!(base as u128 <= MAX_SUPPORTED_BASE, "unsupported base");
                 if base == 10 {
                     match size_of::<$type_name>() {
                         2 => debug_assert!(string.len() >= 6,  "i16 base 10 conversions require at least 6 bytes"),
@@ -353,7 +356,7 @@ impl_unsigned_numtoa_for!(usize,numtoa_usize,numtoa_usize_str);
 
 pub const fn numtoa_i8(mut num: i8, base: i8, string: &mut [u8]) -> &[u8] {
     if cfg!(debug_assertions) {
-        debug_assert!(base as usize <= const { LOOKUP.len() }, "unsupported base");
+        debug_assert!(base as u128 <= MAX_SUPPORTED_BASE, "unsupported base");
         if base == 10 {
             debug_assert!(string.len() >= 4, "i8 conversions need at least 4 bytes");
         }
@@ -425,7 +428,7 @@ impl NumToA for i8 {
 
 pub const fn numtoa_u8(mut num: u8, base: u8, string: &mut [u8]) -> &[u8] {
     if cfg!(debug_assertions) {
-        debug_assert!(base as usize <= const { LOOKUP.len() }, "unsupported base");
+        debug_assert!(base as u128 <= MAX_SUPPORTED_BASE, "unsupported base");
         if base == 10 {
             debug_assert!(string.len() >= 3, "u8 conversions need at least 3 bytes");
         }
