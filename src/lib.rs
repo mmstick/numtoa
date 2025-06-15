@@ -473,7 +473,7 @@ impl NumToA for u8 {
     }
 }
 
-macro_rules! impl_numtoa_streamlined_for_base {
+macro_rules! impl_numtoa_streamlined_for_type {
 (
     $type_name:ty,
     $base:expr,
@@ -519,16 +519,16 @@ macro_rules! impl_numtoa_streamlined_for {
                 use numtoa_i64;
                 use numtoa_i128;
 
-                impl_numtoa_streamlined_for_base!(u8,$base_value,numtoa_u8,u8,$u8_needed_size);
-                impl_numtoa_streamlined_for_base!(u16,$base_value,numtoa_u16,u16,$u16_needed_size);
-                impl_numtoa_streamlined_for_base!(u32,$base_value,numtoa_u32,u32,$u32_needed_size);
-                impl_numtoa_streamlined_for_base!(u64,$base_value,numtoa_u64,u64,$u64_needed_size);
-                impl_numtoa_streamlined_for_base!(u128,$base_value,numtoa_u128,u128,$u128_needed_size);
-                impl_numtoa_streamlined_for_base!(i8,$base_value,numtoa_i8,i8,$i8_needed_size);
-                impl_numtoa_streamlined_for_base!(i16,$base_value,numtoa_i16,i16,$i16_needed_size);
-                impl_numtoa_streamlined_for_base!(i32,$base_value,numtoa_i32,i32,$i32_needed_size);
-                impl_numtoa_streamlined_for_base!(i64,$base_value,numtoa_i64,i64,$i64_needed_size);
-                impl_numtoa_streamlined_for_base!(i128,$base_value,numtoa_i128,i128,$i128_needed_size);
+                impl_numtoa_streamlined_for_type!(u8,$base_value,numtoa_u8,u8,$u8_needed_size);
+                impl_numtoa_streamlined_for_type!(u16,$base_value,numtoa_u16,u16,$u16_needed_size);
+                impl_numtoa_streamlined_for_type!(u32,$base_value,numtoa_u32,u32,$u32_needed_size);
+                impl_numtoa_streamlined_for_type!(u64,$base_value,numtoa_u64,u64,$u64_needed_size);
+                impl_numtoa_streamlined_for_type!(u128,$base_value,numtoa_u128,u128,$u128_needed_size);
+                impl_numtoa_streamlined_for_type!(i8,$base_value,numtoa_i8,i8,$i8_needed_size);
+                impl_numtoa_streamlined_for_type!(i16,$base_value,numtoa_i16,i16,$i16_needed_size);
+                impl_numtoa_streamlined_for_type!(i32,$base_value,numtoa_i32,i32,$i32_needed_size);
+                impl_numtoa_streamlined_for_type!(i64,$base_value,numtoa_i64,i64,$i64_needed_size);
+                impl_numtoa_streamlined_for_type!(i128,$base_value,numtoa_i128,i128,$i128_needed_size);
         }
     };
 }
