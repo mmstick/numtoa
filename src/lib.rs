@@ -356,7 +356,6 @@ impl_unsigned_numtoa_for!(usize,numtoa_usize,numtoa_usize_str);
 
 pub const fn numtoa_i8(mut num: i8, base: i8, string: &mut [u8]) -> &[u8] {
     if cfg!(debug_assertions) {
-        debug_assert!(base > 0, "base must be positive");
         debug_assert!(base > 1 && base as u128 <= MAX_SUPPORTED_BASE, "unsupported base");
         if base == 10 {
             debug_assert!(string.len() >= 4, "i8 conversions need at least 4 bytes");
@@ -429,7 +428,6 @@ impl NumToA for i8 {
 
 pub const fn numtoa_u8(mut num: u8, base: u8, string: &mut [u8]) -> &[u8] {
     if cfg!(debug_assertions) {
-        debug_assert!(base > 0, "base must be positive");
         debug_assert!(base > 1 && base as u128 <= MAX_SUPPORTED_BASE, "unsupported base");
         if base == 10 {
             debug_assert!(string.len() >= 3, "u8 conversions need at least 3 bytes");
