@@ -562,6 +562,12 @@ fn sanity() {
 
 #[test]
 #[should_panic]
+fn zero_base() {
+    numtoa_i32(50, 0, &mut [0u8; 100]);
+}
+
+#[test]
+#[should_panic]
 fn unsupported_base() {
     numtoa_i32(36, 37, &mut [0u8; 100]);
 }
