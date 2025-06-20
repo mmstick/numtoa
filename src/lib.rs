@@ -486,14 +486,21 @@ macro_rules! impl_numtoa_streamlined_for_type {
     $base:expr,
     $core_function_name:ident,
     $base_n_function_name:ident,
+    $padded_function_name:ident,
     $needed_buffer_size:expr) => {
 
         pub const fn $base_n_function_name(num: $type_name) -> AsciiNumber<$needed_buffer_size> {
             let mut string = [0_u8; $needed_buffer_size];
-            let len = $core_function_name(num, $base, &mut string).len();
-            return AsciiNumber { string, start:$needed_buffer_size-len}
+            let start = $needed_buffer_size - $core_function_name(num, $base, &mut string).len();
+            return AsciiNumber { string, start }
         }
 
+        pub const fn $padded_function_name<const LENGTH: usize>(num: $type_name, padding: u8) -> AsciiNumber<LENGTH> {
+            const { assert!(LENGTH >= $needed_buffer_size) }
+            let mut string = [padding; LENGTH];
+            let _ = $core_function_name(num, $base, &mut string);
+            return AsciiNumber { string, start: 0 }
+        }
     };
 }
 
@@ -526,16 +533,16 @@ macro_rules! impl_numtoa_streamlined_for {
                 use numtoa_i64;
                 use numtoa_i128;
 
-                impl_numtoa_streamlined_for_type!(u8,$base_value,numtoa_u8,u8,$u8_needed_size);
-                impl_numtoa_streamlined_for_type!(u16,$base_value,numtoa_u16,u16,$u16_needed_size);
-                impl_numtoa_streamlined_for_type!(u32,$base_value,numtoa_u32,u32,$u32_needed_size);
-                impl_numtoa_streamlined_for_type!(u64,$base_value,numtoa_u64,u64,$u64_needed_size);
-                impl_numtoa_streamlined_for_type!(u128,$base_value,numtoa_u128,u128,$u128_needed_size);
-                impl_numtoa_streamlined_for_type!(i8,$base_value,numtoa_i8,i8,$i8_needed_size);
-                impl_numtoa_streamlined_for_type!(i16,$base_value,numtoa_i16,i16,$i16_needed_size);
-                impl_numtoa_streamlined_for_type!(i32,$base_value,numtoa_i32,i32,$i32_needed_size);
-                impl_numtoa_streamlined_for_type!(i64,$base_value,numtoa_i64,i64,$i64_needed_size);
-                impl_numtoa_streamlined_for_type!(i128,$base_value,numtoa_i128,i128,$i128_needed_size);
+                impl_numtoa_streamlined_for_type!(u8,$base_value,numtoa_u8,u8,u8_padded,$u8_needed_size);
+                impl_numtoa_streamlined_for_type!(u16,$base_value,numtoa_u16,u16,u16_padded,$u16_needed_size);
+                impl_numtoa_streamlined_for_type!(u32,$base_value,numtoa_u32,u32,u32_padded,$u32_needed_size);
+                impl_numtoa_streamlined_for_type!(u64,$base_value,numtoa_u64,u64,u64_padded,$u64_needed_size);
+                impl_numtoa_streamlined_for_type!(u128,$base_value,numtoa_u128,u128,u128_padded,$u128_needed_size);
+                impl_numtoa_streamlined_for_type!(i8,$base_value,numtoa_i8,i8,i8_padded,$i8_needed_size);
+                impl_numtoa_streamlined_for_type!(i16,$base_value,numtoa_i16,i16,i16_padded,$i16_needed_size);
+                impl_numtoa_streamlined_for_type!(i32,$base_value,numtoa_i32,i32,i32_padded,$i32_needed_size);
+                impl_numtoa_streamlined_for_type!(i64,$base_value,numtoa_i64,i64,i64_padded,$i64_needed_size);
+                impl_numtoa_streamlined_for_type!(i128,$base_value,numtoa_i128,i128,i128_padded,$i128_needed_size);
         }
     };
 }
@@ -643,8 +650,24 @@ fn str_convenience_base10() {
 }
 
 #[test]
+fn str_convenience_base10_padded() {
+    assert_eq!("00000000000000256123", base10::i32_padded::<20>(256123, b'0').as_str());
+}
+
+#[test]
 fn str_convenience_base16() {
     assert_eq!("3E87B", base16::i32(256123).as_str());
+}
+
+#[test]
+fn str_convenience_base16_padded() {
+    assert_eq!("0000000000000003E87B", base16::i32_padded::<20>(256123, b'0').as_str());
+}
+
+#[test]
+fn str_convenience_wacky_padding() {
+    assert_eq!("##############-3E87B", base16::i32_padded::<20>(-256123, b'#').as_str());
+    assert_eq!("@@@@@@@@@@@-111", base10::i8_padded::<15>(-111, b'@').as_str());
 }
 
 #[test]
