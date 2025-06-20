@@ -491,8 +491,8 @@ macro_rules! impl_numtoa_streamlined_for_type {
 
         pub const fn $base_n_function_name(num: $type_name) -> AsciiNumber<$needed_buffer_size> {
             let mut string = [0_u8; $needed_buffer_size];
-            let len = $core_function_name(num, $base, &mut string).len();
-            return AsciiNumber { string, start:$needed_buffer_size-len}
+            let start = $needed_buffer_size - $core_function_name(num, $base, &mut string).len();
+            return AsciiNumber { string, start }
         }
 
         pub const fn $padded_function_name<const LENGTH: usize>(num: $type_name, padding: u8) -> AsciiNumber<LENGTH> {
