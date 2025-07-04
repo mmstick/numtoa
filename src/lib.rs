@@ -463,7 +463,7 @@ pub const fn numtoa_u8(mut num: u8, base: u8, string: &mut [u8]) -> &[u8] {
         }
     }
 
-    string.split_at(1).1
+    string.split_at(index.wrapping_add(1)).1
 }
 
 pub const fn numtoa_u8_str(num: u8, base: u8, string: &mut [u8]) -> &str {
@@ -627,6 +627,16 @@ fn base_too_high() {
 #[test]
 fn str_convenience_core() {
     assert_eq!("256123", numtoa_i32_str(256123_i32, 10, &mut [0u8; 20]));
+}
+
+#[test]
+fn str_convenience_core_u8() {
+    assert_eq!("42", numtoa_u8_str(42u8, 10, &mut [b'X'; 20]));
+}
+
+#[test]
+fn str_convenience_core_i8() {
+    assert_eq!("42", numtoa_i8_str(42i8, 10, &mut [b'X'; 20]));
 }
 
 #[test]
