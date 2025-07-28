@@ -140,7 +140,7 @@ impl <const N: usize> AsciiNumber<N> {
 
     const fn new(string: [MaybeUninit<u8>; N], start: usize) -> Self {
         if cfg!(debug_assertions) {
-            debug_assert!(core::str::from_utf8(unsafe { assume_slice_init(&string) }).is_ok(), "ascii number created with non-ascii data");
+            debug_assert!(core::str::from_utf8(unsafe { assume_slice_init(string.split_at(start).1) }).is_ok(), "ascii number created with non-ascii data");
         }
         Self { string, start }
     }
