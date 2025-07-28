@@ -181,14 +181,14 @@ impl <const N: usize> Debug for AsciiNumber<N> {
 }
 
 #[inline]
-const fn assume_mut_slice_uninit<T>(thing: &mut [T]) -> &mut [MaybeUninit<T>] {
+const fn assume_mut_slice_uninit(thing: &mut [u8]) -> &mut [MaybeUninit<u8>] {
     // SAFETY: tbh i think this is always safe
-    unsafe { core::mem::transmute::<&mut [T], &mut [MaybeUninit<T>]>(thing) }
+    unsafe { core::mem::transmute::<&mut [u8], &mut [MaybeUninit<u8>]>(thing) }
 }
 
 #[inline]
-const unsafe fn assume_slice_init<T>(thing: &[MaybeUninit<T>]) -> &[T] {
-    core::mem::transmute::<&[MaybeUninit<T>], &[T]>(thing)
+const unsafe fn assume_slice_init(thing: &[MaybeUninit<u8>]) -> &[u8] {
+    core::mem::transmute::<&[MaybeUninit<u8>], &[u8]>(thing)
 }
 
 macro_rules! copy_2_dec_lut_bytes {
