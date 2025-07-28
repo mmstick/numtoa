@@ -130,20 +130,29 @@ const DEC_LOOKUP: &[u8; 200] = b"0001020304050607080910111213141516171819\
 const MAX_SUPPORTED_BASE: u128 = LOOKUP.len() as u128;
 
 /// The result of a number conversion to ascii containing a string with at most length `N` bytes/characters
+// invariant: string[start..] always contains valid ascii
 pub struct AsciiNumber<const N: usize> {
     string: [MaybeUninit<u8>; N],
     start: usize,
 }
 
 impl <const N: usize> AsciiNumber<N> {
+
+    const fn new(string: [MaybeUninit<u8>; N], start: usize) -> Self {
+        if cfg!(debug_assertions) {
+            debug_assert!(core::str::from_utf8(unsafe { assume_slice_init(&string) }).is_ok(), "ascii number created with non-ascii data");
+        }
+        Self { string, start }
+    }
+
     /// Get the ascii representation of the number as a byte slice
     pub const fn as_slice(&self) -> &[u8] {
-        // SAFETY: number was initialized from self.start
+        // SAFETY: invariant
         unsafe { assume_slice_init(self.string.split_at(self.start).1) }
     }
     /// Get the ascii representation of the number as a string slice
     pub const fn as_str(&self) -> &str {
-        // SAFETY: data is always ascii
+        // SAFETY: invariant
         unsafe { core::str::from_utf8_unchecked(Self::as_slice(self)) }
     }
     /// Consume this AsciiNumber to return the underlying buffer & string start position
@@ -523,7 +532,7 @@ macro_rules! impl_numtoa_streamlined_for_type {
         pub const fn $base_n_function_name(num: $type_name) -> AsciiNumber<$needed_buffer_size> {
             let mut string: [MaybeUninit<u8>; $needed_buffer_size] = [MaybeUninit::uninit(); $needed_buffer_size];
             let start = $needed_buffer_size - $core_function_name(num, $base, &mut string).len();
-            return AsciiNumber { string, start }
+            return AsciiNumber::new(string, start)
         }
 
         pub const fn $padded_function_name<const LENGTH: usize>(num: $type_name, padding: u8) -> AsciiNumber<LENGTH> {
@@ -531,7 +540,7 @@ macro_rules! impl_numtoa_streamlined_for_type {
             let mut string = [MaybeUninit::new(padding); LENGTH];
             let _ = $needed_buffer_size - $core_function_name(num, $base, &mut string).len();
             // n.b. this is safe because any repeating u8 is guaranteed to be ascii
-            return AsciiNumber { string, start: 0 }
+            return AsciiNumber::new(string, 0)
         }
 
     };
