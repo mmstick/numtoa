@@ -75,7 +75,7 @@
 
 #![no_std]
 use core::fmt::{Debug, Display, Formatter};
-use core::mem::size_of;
+use core::mem::{size_of, MaybeUninit};
 use core::ops::Deref;
 use core::str;
 
@@ -131,21 +131,23 @@ const MAX_SUPPORTED_BASE: u128 = LOOKUP.len() as u128;
 
 /// The result of a number conversion to ascii containing a string with at most length `N` bytes/characters
 pub struct AsciiNumber<const N: usize> {
-    string: [u8; N],
+    string: [MaybeUninit<u8>; N],
     start: usize,
 }
 
 impl <const N: usize> AsciiNumber<N> {
     /// Get the ascii representation of the number as a byte slice
     pub const fn as_slice(&self) -> &[u8] {
-        self.string.split_at(self.start).1
+        // SAFETY: number was initialized from self.start
+        unsafe { assume_slice_init(self.string.split_at(self.start).1) }
     }
     /// Get the ascii representation of the number as a string slice
     pub const fn as_str(&self) -> &str {
+        // SAFETY: data is always ascii
         unsafe { core::str::from_utf8_unchecked(Self::as_slice(self)) }
     }
     /// Consume this AsciiNumber to return the underlying buffer & string start position
-    pub const fn into_inner(self) -> ([u8;N], usize) {
+    pub const fn into_inner(self) -> ([MaybeUninit<u8>;N], usize) {
         (self.string, self.start)
     }
 }
@@ -167,6 +169,16 @@ impl <const N: usize> Debug for AsciiNumber<N> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), core::fmt::Error> {
         Debug::fmt(self.as_str(), f)
     }
+}
+
+#[inline]
+const unsafe fn assume_mut_slice_init<T>(thing: &mut [MaybeUninit<T>]) -> &mut [T] {
+    core::mem::transmute::<&mut [MaybeUninit<T>], &mut [T]>(thing)
+}
+
+#[inline]
+const unsafe fn assume_slice_init<T>(thing: &[MaybeUninit<T>]) -> &[T] {
+    core::mem::transmute::<&[MaybeUninit<T>], &[T]>(thing)
 }
 
 macro_rules! copy_2_dec_lut_bytes {
@@ -257,7 +269,7 @@ macro_rules! impl_unsigned_numtoa_for {
 
         impl NumToA for $type_name {
             fn numtoa(self, base: $type_name, string: &mut [u8]) -> &[u8] {
-               $core_function_name(self, base, string)
+                $core_function_name(self, base, string)
             }
             fn numtoa_str(self, base: $type_name, buf: &mut [u8]) -> &str {
                 $str_function_name(self, base, buf)
@@ -490,15 +502,25 @@ macro_rules! impl_numtoa_streamlined_for_type {
     $needed_buffer_size:expr) => {
 
         pub const fn $base_n_function_name(num: $type_name) -> AsciiNumber<$needed_buffer_size> {
-            let mut string = [0_u8; $needed_buffer_size];
-            let start = $needed_buffer_size - $core_function_name(num, $base, &mut string).len();
+            let mut string: [MaybeUninit<u8>; $needed_buffer_size] = [MaybeUninit::uninit(); $needed_buffer_size];
+            let start = $needed_buffer_size - $core_function_name(
+                num,
+                $base,
+                // SAFETY: numtoa never reads from the string
+                unsafe { assume_mut_slice_init(&mut string) },
+            ).len();
             return AsciiNumber { string, start }
         }
 
         pub const fn $padded_function_name<const LENGTH: usize>(num: $type_name, padding: u8) -> AsciiNumber<LENGTH> {
             const { assert!(LENGTH >= $needed_buffer_size) }
-            let mut string = [padding; LENGTH];
-            let _ = $core_function_name(num, $base, &mut string);
+            let mut string = [MaybeUninit::new(padding); LENGTH];
+            let _ = $core_function_name(
+                num,
+                $base,
+                // SAFETY: numtoa never reads from the string
+                unsafe { assume_mut_slice_init(&mut string) },
+            );
             return AsciiNumber { string, start: 0 }
         }
     };
@@ -520,7 +542,9 @@ macro_rules! impl_numtoa_streamlined_for {
         $i128_needed_size:expr
 ) => {
         pub mod $base_module_name {
-
+                
+                use core::mem::MaybeUninit;
+                use assume_mut_slice_init;
                 use AsciiNumber;
                 use numtoa_u8;
                 use numtoa_u16;
