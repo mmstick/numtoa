@@ -687,7 +687,7 @@ fn base_too_high() {
 
 #[test]
 fn str_convenience_uninit() {
-    assert_eq!("256123", numtoa_i32_str(256123_i32, 10, &mut [0u8; 20]));
+    assert_eq!("256123", numtoa_uninit_i32_str(256123_i32, 10, &mut [MaybeUninit::uninit(); 20]));
 }
 
 #[test]
