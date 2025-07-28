@@ -454,6 +454,10 @@ pub const fn numtoa_uninit_i8(mut num: i8, base: i8, string: &mut [MaybeUninit<u
     unsafe { assume_slice_init(string.split_at(index.wrapping_add(1)).1) }
 }
 
+pub const fn numtoa_uninit_i8_str(num: i8, base: i8, string: &mut [MaybeUninit<u8>]) -> &str {
+    unsafe { str::from_utf8_unchecked(numtoa_uninit_i8(num, base, string)) }
+}
+
 pub const fn numtoa_i8(num: i8, base: i8, string: &mut [u8]) -> &[u8] {
     numtoa_uninit_i8(num, base, assume_mut_slice_uninit(string))
 }
@@ -510,6 +514,10 @@ pub const fn numtoa_uninit_u8(mut num: u8, base: u8, string: &mut [MaybeUninit<u
     }
 
     unsafe { assume_slice_init(string.split_at(index.wrapping_add(1)).1) }
+}
+
+pub const fn numtoa_uninit_u8_str(num: u8, base: u8, string: &mut [MaybeUninit<u8>]) -> &str {
+    unsafe { str::from_utf8_unchecked(numtoa_uninit_u8(num, base, string)) }
 }
 
 pub const fn numtoa_u8(num: u8, base: u8, string: &mut [u8]) -> &[u8] {
