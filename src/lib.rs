@@ -111,6 +111,8 @@ pub trait NumToA {
     /// ```
     fn numtoa(self, base: Self, string: &mut [u8]) -> &[u8];
 
+    fn numtoa_uninit(self, base: Self, string: &mut [MaybeUninit<u8>]) -> &[u8];
+
     /// Convenience method for quickly getting a string from the input's array buffer.
     fn numtoa_str(self, base: Self, buf: &mut [u8]) -> &str;
 }
@@ -286,6 +288,9 @@ macro_rules! impl_unsigned_numtoa_for {
         }
 
         impl NumToA for $type_name {
+            fn numtoa_uninit(self, base: $type_name, string: &mut [MaybeUninit<u8>]) -> &[u8] {
+                $uninit_core_function_name(self, base, string)
+            }
             fn numtoa(self, base: $type_name, string: &mut [u8]) -> &[u8] {
                 $core_function_name(self, base, string)
             }
@@ -372,10 +377,12 @@ macro_rules! impl_signed_numtoa_for {
         }
 
         impl NumToA for $type_name {
+            fn numtoa_uninit(self, base: $type_name, string: &mut [MaybeUninit<u8>]) -> &[u8] {
+                $uninit_function_name(self, base, string)                
+            }
             fn numtoa(self, base: $type_name, string: &mut [u8]) -> &[u8] {
                 $core_function_name(self, base, string)                
             }
-    
             fn numtoa_str(self, base: $type_name, buf: &mut [u8]) -> &str {
                 $str_function_name(self, base, buf)
             }
@@ -465,10 +472,12 @@ pub const fn numtoa_i8_str(num: i8, base: i8, string: &mut [u8]) -> &str {
 }
 
 impl NumToA for i8 {
+    fn numtoa_uninit(self, base: i8, string: &mut [MaybeUninit<u8>]) -> &[u8] {
+        numtoa_uninit_i8(self, base, string)
+    }
     fn numtoa(self, base: i8, string: &mut [u8]) -> &[u8] {
         numtoa_i8(self, base, string)
     }
-
     fn numtoa_str(self, base: Self, buf: &mut [u8]) -> &str {
         numtoa_i8_str(self, base, buf)
     }
@@ -527,6 +536,11 @@ pub const fn numtoa_u8_str(num: u8, base: u8, string: &mut [u8]) -> &str {
 }
 
 impl NumToA for u8 {
+
+    fn numtoa_uninit(self, base: u8, string: &mut [MaybeUninit<u8>]) -> &[u8] {
+        numtoa_uninit_u8(self, base, string)
+    }
+
     fn numtoa(self, base: u8, string: &mut [u8]) -> &[u8] {
         numtoa_u8(self, base, string)
     }
