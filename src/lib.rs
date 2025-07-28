@@ -172,11 +172,6 @@ impl <const N: usize> Debug for AsciiNumber<N> {
 }
 
 #[inline]
-const unsafe fn assume_mut_slice_init<T>(thing: &mut [MaybeUninit<T>]) -> &mut [T] {
-    core::mem::transmute::<&mut [MaybeUninit<T>], &mut [T]>(thing)
-}
-
-#[inline]
 const fn assume_mut_slice_uninit<T>(thing: &mut [T]) -> &mut [MaybeUninit<T>] {
     // SAFETY: tbh i think this is always safe
     unsafe { core::mem::transmute::<&mut [T], &mut [MaybeUninit<T>]>(thing) }
