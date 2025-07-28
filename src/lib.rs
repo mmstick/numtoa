@@ -177,14 +177,20 @@ const unsafe fn assume_mut_slice_init<T>(thing: &mut [MaybeUninit<T>]) -> &mut [
 }
 
 #[inline]
+const fn assume_mut_slice_uninit<T>(thing: &mut [T]) -> &mut [MaybeUninit<T>] {
+    // SAFETY: tbh i think this is always safe
+    unsafe { core::mem::transmute::<&mut [T], &mut [MaybeUninit<T>]>(thing) }
+}
+
+#[inline]
 const unsafe fn assume_slice_init<T>(thing: &[MaybeUninit<T>]) -> &[T] {
     core::mem::transmute::<&[MaybeUninit<T>], &[T]>(thing)
 }
 
 macro_rules! copy_2_dec_lut_bytes {
     ($to:ident,$to_index:expr,$lut_index:expr) => {
-        $to[$to_index as usize] = DEC_LOOKUP[$lut_index as usize];
-        $to[$to_index as usize+1] = DEC_LOOKUP[$lut_index as usize+1];
+        $to[$to_index as usize] = MaybeUninit::new(DEC_LOOKUP[$lut_index as usize]);
+        $to[$to_index as usize+1] = MaybeUninit::new(DEC_LOOKUP[$lut_index as usize+1]);
     };
 }
 
@@ -207,14 +213,14 @@ macro_rules! base_10 {
         } else if $number > 99 {
             let section = ($number as u16 / 10) * 2;
             copy_2_dec_lut_bytes!($string, $index-2, section);
-            $string[$index] = LOOKUP[($number % 10) as usize];
+            $string[$index] = MaybeUninit::new(LOOKUP[($number % 10) as usize]);
             $index = $index.wrapping_sub(3);
         } else if $number > 9 {
             $number *= 2;
             copy_2_dec_lut_bytes!($string, $index-1, $number);
             $index = $index.wrapping_sub(2);
         } else {
-            $string[$index] = LOOKUP[$number as usize];
+            $string[$index] = MaybeUninit::new(LOOKUP[$number as usize]);
             $index = $index.wrapping_sub(1);
         }
     }
@@ -223,11 +229,12 @@ macro_rules! base_10 {
 macro_rules! impl_unsigned_numtoa_for {
     (
         $type_name:ty,
+        $uninit_function_name:ident,
         $core_function_name:ident,
         $str_function_name:ident
     ) => {
 
-        pub const fn $core_function_name(mut num: $type_name, base: $type_name, string: &mut [u8]) -> &[u8] {
+        pub const fn $uninit_function_name(mut num: $type_name, base: $type_name, string: &mut [MaybeUninit<u8>]) -> &[u8] {
             // Check if the buffer is large enough and panic on debug builds if it isn't
             if cfg!(debug_assertions) {
                 debug_assert!(base > 1 && base as u128 <= MAX_SUPPORTED_BASE, "unsupported base");
@@ -244,8 +251,8 @@ macro_rules! impl_unsigned_numtoa_for {
 
             let mut index = string.len() - 1;
             if num == 0 {
-                string[index] = b'0';
-                return string.split_at(index).1;
+                string[index] = MaybeUninit::new(b'0');
+                return unsafe { assume_slice_init(string.split_at(index).1) }
             }
 
             if base == 10 {
@@ -254,13 +261,17 @@ macro_rules! impl_unsigned_numtoa_for {
             } else {
                 while num != 0 {
                     let rem = num % base;
-                    string[index] = LOOKUP[rem as usize];
+                    string[index] = MaybeUninit::new(LOOKUP[rem as usize]);
                     index = index.wrapping_sub(1);
                     num /= base;
                 }
             }
 
-            string.split_at(index.wrapping_add(1)).1
+            unsafe { assume_slice_init(string.split_at(index.wrapping_add(1)).1) }
+        }
+
+        pub const fn $core_function_name(num: $type_name, base: $type_name, string: &mut [u8]) -> &[u8] {
+            $uninit_function_name(num, base, assume_mut_slice_uninit(string))
         }
 
         pub const fn $str_function_name(num: $type_name, base: $type_name, string: &mut [u8]) -> &str {
@@ -282,11 +293,12 @@ macro_rules! impl_unsigned_numtoa_for {
 macro_rules! impl_signed_numtoa_for {
     (
         $type_name:ty,
+        $uninit_function_name:ident,
         $core_function_name:ident,
         $str_function_name:ident
     ) => {
 
-        pub const fn $core_function_name(mut num: $type_name, base: $type_name, string: &mut [u8]) -> &[u8] {
+        pub const fn $uninit_function_name(mut num: $type_name, base: $type_name, string: &mut [MaybeUninit<u8>]) -> &[u8] {
             if cfg!(debug_assertions) {
                 debug_assert!(base > 1 && base as u128 <= MAX_SUPPORTED_BASE, "unsupported base");
                 if base == 10 {
@@ -309,14 +321,14 @@ macro_rules! impl_signed_numtoa_for {
                     Some(value) => value,
                     None        => {
                         let value = <$type_name>::max_value();
-                        string[index] = LOOKUP[((value % base + 1) % base) as usize];
+                        string[index] = MaybeUninit::new(LOOKUP[((value % base + 1) % base) as usize]);
                         index -= 1;
                         value / base + ((value % base == base - 1) as $type_name)
                     }
                 };
             } else if num == 0 {
-                string[index] = b'0';
-                return string.split_at(index).1;
+                string[index] = MaybeUninit::new(b'0');
+                return unsafe { assume_slice_init(string.split_at(index).1) };
             }
 
             if base == 10 {
@@ -325,18 +337,22 @@ macro_rules! impl_signed_numtoa_for {
             } else {
                 while num != 0 {
                     let rem = num % base;
-                    string[index] = LOOKUP[rem as usize];
+                    string[index] = MaybeUninit::new(LOOKUP[rem as usize]);
                     index = index.wrapping_sub(1);
                     num /= base;
                 }
             }
 
             if is_negative {
-                string[index] = b'-';
+                string[index] = MaybeUninit::new(b'-');
                 index = index.wrapping_sub(1);
             }
 
-            string.split_at(index.wrapping_add(1)).1
+            unsafe { assume_slice_init(string.split_at(index.wrapping_add(1)).1) }
+        }
+
+        pub const fn $core_function_name(num: $type_name, base: $type_name, string: &mut [u8]) -> &[u8] {
+           $uninit_function_name(num, base, assume_mut_slice_uninit(string))
         }
 
         pub const fn $str_function_name(num: $type_name, base: $type_name, string: &mut [u8]) -> &str {
@@ -355,18 +371,18 @@ macro_rules! impl_signed_numtoa_for {
     }
 }
 
-impl_signed_numtoa_for!(i16,numtoa_i16,numtoa_i16_str);
-impl_signed_numtoa_for!(i32,numtoa_i32,numtoa_i32_str);
-impl_signed_numtoa_for!(i64,numtoa_i64,numtoa_i64_str);
-impl_signed_numtoa_for!(i128,numtoa_i128,numtoa_i128_str);
-impl_signed_numtoa_for!(isize,numtoa_isize,numtoa_isize_str);
-impl_unsigned_numtoa_for!(u16,numtoa_u16,numtoa_u16_str);
-impl_unsigned_numtoa_for!(u32,numtoa_u32,numtoa_u32_str);
-impl_unsigned_numtoa_for!(u64,numtoa_u64,numtoa_u64_str);
-impl_unsigned_numtoa_for!(u128,numtoa_u128,numtoa_u128_str);
-impl_unsigned_numtoa_for!(usize,numtoa_usize,numtoa_usize_str);
+impl_signed_numtoa_for!(i16,numtoa_uninit_i16,numtoa_i16,numtoa_i16_str);
+impl_signed_numtoa_for!(i32,numtoa_uninit_i32,numtoa_i32,numtoa_i32_str);
+impl_signed_numtoa_for!(i64,numtoa_uninit_i64,numtoa_i64,numtoa_i64_str);
+impl_signed_numtoa_for!(i128,numtoa_uninit_i128,numtoa_i128,numtoa_i128_str);
+impl_signed_numtoa_for!(isize,numtoa_uninit_isize,numtoa_isize,numtoa_isize_str);
+impl_unsigned_numtoa_for!(u16,numtoa_uninit_u16,numtoa_u16,numtoa_u16_str);
+impl_unsigned_numtoa_for!(u32,numtoa_uninit_u32,numtoa_u32,numtoa_u32_str);
+impl_unsigned_numtoa_for!(u64,numtoa_uninit_u64,numtoa_u64,numtoa_u64_str);
+impl_unsigned_numtoa_for!(u128,numtoa_uninit_u128,numtoa_u128,numtoa_u128_str);
+impl_unsigned_numtoa_for!(usize,numtoa_uninit_usize,numtoa_usize,numtoa_usize_str);
 
-pub const fn numtoa_i8(mut num: i8, base: i8, string: &mut [u8]) -> &[u8] {
+pub const fn numtoa_uninit_i8(mut num: i8, base: i8, string: &mut [MaybeUninit<u8>]) -> &[u8] {
     if cfg!(debug_assertions) {
         debug_assert!(base > 1 && base as u128 <= MAX_SUPPORTED_BASE, "unsupported base");
         if base == 10 {
@@ -383,45 +399,49 @@ pub const fn numtoa_i8(mut num: i8, base: i8, string: &mut [u8]) -> &[u8] {
             Some(value) => value,
             None        => {
                 let value = <i8>::max_value();
-                string[index] = LOOKUP[((value % base + 1) % base) as usize];
+                string[index] = MaybeUninit::new(LOOKUP[((value % base + 1) % base) as usize]);
                 index -= 1;
                 value / base + ((value % base == base - 1) as i8)
             }
         };
     } else if num == 0 {
-        string[index] = b'0';
-        return string.split_at(index).1;
+        string[index] = MaybeUninit::new(b'0');
+        return unsafe { assume_slice_init(string.split_at(index).1) };
     }
 
     if base == 10 {
         if num > 99 {
             let section = (num / 10) * 2;
             copy_2_dec_lut_bytes!(string, index-2, section);
-            string[index] = LOOKUP[(num % 10) as usize];
+            string[index] = MaybeUninit::new(LOOKUP[(num % 10) as usize]);
             index = index.wrapping_sub(3);
         } else if num > 9 {
             let idx = num as usize * 2;
             copy_2_dec_lut_bytes!(string, index-1, idx);
             index = index.wrapping_sub(2);
             } else {
-            string[index] = LOOKUP[num as usize];
+            string[index] = MaybeUninit::new(LOOKUP[num as usize]);
             index = index.wrapping_sub(1);
         }
     } else {
         while num != 0 {
             let rem = num % base;
-            string[index] = LOOKUP[rem as usize];
+            string[index] = MaybeUninit::new(LOOKUP[rem as usize]);
             index = index.wrapping_sub(1);
             num /= base;
         }
     }
 
     if is_negative {
-        string[index] = b'-';
+        string[index] = MaybeUninit::new(b'-');
         index = index.wrapping_sub(1);
     }
 
-    string.split_at(index.wrapping_add(1)).1
+    unsafe { assume_slice_init(string.split_at(index.wrapping_add(1)).1) }
+}
+
+pub const fn numtoa_i8(num: i8, base: i8, string: &mut [u8]) -> &[u8] {
+    numtoa_uninit_i8(num, base, assume_mut_slice_uninit(string))
 }
 
 pub const fn numtoa_i8_str(num: i8, base: i8, string: &mut [u8]) -> &str {
@@ -438,7 +458,7 @@ impl NumToA for i8 {
     }
 }
 
-pub const fn numtoa_u8(mut num: u8, base: u8, string: &mut [u8]) -> &[u8] {
+pub const fn numtoa_uninit_u8(mut num: u8, base: u8, string: &mut [MaybeUninit<u8>]) -> &[u8] {
     if cfg!(debug_assertions) {
         debug_assert!(base > 1 && base as u128 <= MAX_SUPPORTED_BASE, "unsupported base");
         if base == 10 {
@@ -448,34 +468,38 @@ pub const fn numtoa_u8(mut num: u8, base: u8, string: &mut [u8]) -> &[u8] {
 
     let mut index = string.len() - 1;
     if num == 0 {
-        string[index] = b'0';
-        return string.split_at(index).1;
+        string[index] = MaybeUninit::new(b'0');
+        return unsafe { assume_slice_init(string.split_at(index).1) };
     }
 
     if base == 10 {
         if num > 99 {
             let section = (num / 10) * 2;
             copy_2_dec_lut_bytes!(string, index-2, section);
-            string[index] = LOOKUP[(num % 10) as usize];
+            string[index] = MaybeUninit::new(LOOKUP[(num % 10) as usize]);
             index = index.wrapping_sub(3);
         } else if num > 9 {
             num *= 2;
             copy_2_dec_lut_bytes!(string, index-1, num);
             index = index.wrapping_sub(2);
         } else {
-            string[index] = LOOKUP[num as usize];
+            string[index] = MaybeUninit::new(LOOKUP[num as usize]);
             index = index.wrapping_sub(1);
         }
     } else {
         while num != 0 {
             let rem = num % base;
-            string[index] = LOOKUP[rem as usize];
+            string[index] = MaybeUninit::new(LOOKUP[rem as usize]);
             index = index.wrapping_sub(1);
             num /= base;
         }
     }
 
-    string.split_at(index.wrapping_add(1)).1
+    unsafe { assume_slice_init(string.split_at(index.wrapping_add(1)).1) }
+}
+
+pub const fn numtoa_u8(num: u8, base: u8, string: &mut [u8]) -> &[u8] {
+    numtoa_uninit_u8(num, base, assume_mut_slice_uninit(string))
 }
 
 pub const fn numtoa_u8_str(num: u8, base: u8, string: &mut [u8]) -> &str {
@@ -503,26 +527,18 @@ macro_rules! impl_numtoa_streamlined_for_type {
 
         pub const fn $base_n_function_name(num: $type_name) -> AsciiNumber<$needed_buffer_size> {
             let mut string: [MaybeUninit<u8>; $needed_buffer_size] = [MaybeUninit::uninit(); $needed_buffer_size];
-            let start = $needed_buffer_size - $core_function_name(
-                num,
-                $base,
-                // SAFETY: numtoa never reads from the string
-                unsafe { assume_mut_slice_init(&mut string) },
-            ).len();
+            let start = $needed_buffer_size - $core_function_name(num, $base, &mut string).len();
             return AsciiNumber { string, start }
         }
 
         pub const fn $padded_function_name<const LENGTH: usize>(num: $type_name, padding: u8) -> AsciiNumber<LENGTH> {
             const { assert!(LENGTH >= $needed_buffer_size) }
             let mut string = [MaybeUninit::new(padding); LENGTH];
-            let _ = $core_function_name(
-                num,
-                $base,
-                // SAFETY: numtoa never reads from the string
-                unsafe { assume_mut_slice_init(&mut string) },
-            );
+            let _ = $needed_buffer_size - $core_function_name(num, $base, &mut string).len();
+            // n.b. this is safe because any repeating u8 is guaranteed to be ascii
             return AsciiNumber { string, start: 0 }
         }
+
     };
 }
 
@@ -544,29 +560,28 @@ macro_rules! impl_numtoa_streamlined_for {
         pub mod $base_module_name {
                 
                 use core::mem::MaybeUninit;
-                use assume_mut_slice_init;
                 use AsciiNumber;
-                use numtoa_u8;
-                use numtoa_u16;
-                use numtoa_u32;
-                use numtoa_u64;
-                use numtoa_u128;
-                use numtoa_i8;
-                use numtoa_i16;
-                use numtoa_i32;
-                use numtoa_i64;
-                use numtoa_i128;
+                use numtoa_uninit_u8;
+                use numtoa_uninit_u16;
+                use numtoa_uninit_u32;
+                use numtoa_uninit_u64;
+                use numtoa_uninit_u128;
+                use numtoa_uninit_i8;
+                use numtoa_uninit_i16;
+                use numtoa_uninit_i32;
+                use numtoa_uninit_i64;
+                use numtoa_uninit_i128;
 
-                impl_numtoa_streamlined_for_type!(u8,$base_value,numtoa_u8,u8,u8_padded,$u8_needed_size);
-                impl_numtoa_streamlined_for_type!(u16,$base_value,numtoa_u16,u16,u16_padded,$u16_needed_size);
-                impl_numtoa_streamlined_for_type!(u32,$base_value,numtoa_u32,u32,u32_padded,$u32_needed_size);
-                impl_numtoa_streamlined_for_type!(u64,$base_value,numtoa_u64,u64,u64_padded,$u64_needed_size);
-                impl_numtoa_streamlined_for_type!(u128,$base_value,numtoa_u128,u128,u128_padded,$u128_needed_size);
-                impl_numtoa_streamlined_for_type!(i8,$base_value,numtoa_i8,i8,i8_padded,$i8_needed_size);
-                impl_numtoa_streamlined_for_type!(i16,$base_value,numtoa_i16,i16,i16_padded,$i16_needed_size);
-                impl_numtoa_streamlined_for_type!(i32,$base_value,numtoa_i32,i32,i32_padded,$i32_needed_size);
-                impl_numtoa_streamlined_for_type!(i64,$base_value,numtoa_i64,i64,i64_padded,$i64_needed_size);
-                impl_numtoa_streamlined_for_type!(i128,$base_value,numtoa_i128,i128,i128_padded,$i128_needed_size);
+                impl_numtoa_streamlined_for_type!(u8,$base_value,numtoa_uninit_u8,u8,u8_padded,$u8_needed_size);
+                impl_numtoa_streamlined_for_type!(u16,$base_value,numtoa_uninit_u16,u16,u16_padded,$u16_needed_size);
+                impl_numtoa_streamlined_for_type!(u32,$base_value,numtoa_uninit_u32,u32,u32_padded,$u32_needed_size);
+                impl_numtoa_streamlined_for_type!(u64,$base_value,numtoa_uninit_u64,u64,u64_padded,$u64_needed_size);
+                impl_numtoa_streamlined_for_type!(u128,$base_value,numtoa_uninit_u128,u128,u128_padded,$u128_needed_size);
+                impl_numtoa_streamlined_for_type!(i8,$base_value,numtoa_uninit_i8,i8,i8_padded,$i8_needed_size);
+                impl_numtoa_streamlined_for_type!(i16,$base_value,numtoa_uninit_i16,i16,i16_padded,$i16_needed_size);
+                impl_numtoa_streamlined_for_type!(i32,$base_value,numtoa_uninit_i32,i32,i32_padded,$i32_needed_size);
+                impl_numtoa_streamlined_for_type!(i64,$base_value,numtoa_uninit_i64,i64,i64_padded,$i64_needed_size);
+                impl_numtoa_streamlined_for_type!(i128,$base_value,numtoa_uninit_i128,i128,i128_padded,$i128_needed_size);
         }
     };
 }
