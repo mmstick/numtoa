@@ -113,6 +113,8 @@ pub trait NumToA {
 
     fn numtoa_uninit(self, base: Self, string: &mut [MaybeUninit<u8>]) -> &[u8];
 
+    fn numtoa_uninit_str(self, base: Self, string: &mut [MaybeUninit<u8>]) -> &str;
+
     /// Convenience method for quickly getting a string from the input's array buffer.
     fn numtoa_str(self, base: Self, buf: &mut [u8]) -> &str;
 }
@@ -291,6 +293,9 @@ macro_rules! impl_unsigned_numtoa_for {
             fn numtoa_uninit(self, base: $type_name, string: &mut [MaybeUninit<u8>]) -> &[u8] {
                 $uninit_core_function_name(self, base, string)
             }
+            fn numtoa_uninit_str(self, base: $type_name, string: &mut [MaybeUninit<u8>]) -> &str {
+                $uninit_str_function_name(self, base, string)
+            }
             fn numtoa(self, base: $type_name, string: &mut [u8]) -> &[u8] {
                 $core_function_name(self, base, string)
             }
@@ -379,6 +384,9 @@ macro_rules! impl_signed_numtoa_for {
         impl NumToA for $type_name {
             fn numtoa_uninit(self, base: $type_name, string: &mut [MaybeUninit<u8>]) -> &[u8] {
                 $uninit_function_name(self, base, string)                
+            }
+            fn numtoa_uninit_str(self, base: $type_name, string: &mut [MaybeUninit<u8>]) -> &str {
+                $uninit_str_function_name(self, base, string)                
             }
             fn numtoa(self, base: $type_name, string: &mut [u8]) -> &[u8] {
                 $core_function_name(self, base, string)                
@@ -475,6 +483,9 @@ impl NumToA for i8 {
     fn numtoa_uninit(self, base: i8, string: &mut [MaybeUninit<u8>]) -> &[u8] {
         numtoa_uninit_i8(self, base, string)
     }
+    fn numtoa_uninit_str(self, base: i8, string: &mut [MaybeUninit<u8>]) -> &str {
+        numtoa_uninit_i8_str(self, base, string)
+    }
     fn numtoa(self, base: i8, string: &mut [u8]) -> &[u8] {
         numtoa_i8(self, base, string)
     }
@@ -536,15 +547,15 @@ pub const fn numtoa_u8_str(num: u8, base: u8, string: &mut [u8]) -> &str {
 }
 
 impl NumToA for u8 {
-
     fn numtoa_uninit(self, base: u8, string: &mut [MaybeUninit<u8>]) -> &[u8] {
         numtoa_uninit_u8(self, base, string)
     }
-
+    fn numtoa_uninit_str(self, base: u8, string: &mut [MaybeUninit<u8>]) -> &str {
+        numtoa_uninit_u8_str(self, base, string)
+    }
     fn numtoa(self, base: u8, string: &mut [u8]) -> &[u8] {
         numtoa_u8(self, base, string)
     }
-
     fn numtoa_str(self, base: Self, buf: &mut [u8]) -> &str {
         numtoa_u8_str(self, base, buf)
     }
@@ -713,6 +724,11 @@ fn str_convenience_core_u8() {
 }
 
 #[test]
+fn str_convenience_core_u8_uninit() {
+    assert_eq!("42", numtoa_uninit_u8_str(42u8, 10, &mut [MaybeUninit::uninit(); 20]));
+}
+
+#[test]
 fn str_convenience_core_i8() {
     assert_eq!("42", numtoa_i8_str(42i8, 10, &mut [b'X'; 20]));
 }
@@ -720,6 +736,11 @@ fn str_convenience_core_i8() {
 #[test]
 fn str_convenience_trait() {
     assert_eq!("256123", 256123.numtoa_str(10, &mut [0u8; 20]));
+}
+
+#[test]
+fn str_convenience_trait_uninit() {
+    assert_eq!("256123", 256123.numtoa_uninit_str(10, &mut [MaybeUninit::uninit(); 20]));
 }
 
 #[test]
