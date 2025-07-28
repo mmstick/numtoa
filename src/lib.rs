@@ -233,12 +233,13 @@ macro_rules! base_10 {
 macro_rules! impl_unsigned_numtoa_for {
     (
         $type_name:ty,
-        $uninit_function_name:ident,
+        $uninit_core_function_name:ident,
+        $uninit_str_function_name:ident,
         $core_function_name:ident,
         $str_function_name:ident
     ) => {
 
-        pub const fn $uninit_function_name(mut num: $type_name, base: $type_name, string: &mut [MaybeUninit<u8>]) -> &[u8] {
+        pub const fn $uninit_core_function_name(mut num: $type_name, base: $type_name, string: &mut [MaybeUninit<u8>]) -> &[u8] {
             // Check if the buffer is large enough and panic on debug builds if it isn't
             if cfg!(debug_assertions) {
                 debug_assert!(base > 1 && base as u128 <= MAX_SUPPORTED_BASE, "unsupported base");
@@ -274,8 +275,12 @@ macro_rules! impl_unsigned_numtoa_for {
             unsafe { assume_slice_init(string.split_at(index.wrapping_add(1)).1) }
         }
 
+        pub const fn $uninit_str_function_name(num: $type_name, base: $type_name, string: &mut [MaybeUninit<u8>]) -> &str {
+            unsafe { core::str::from_utf8_unchecked($uninit_core_function_name(num, base, string)) }
+        }
+
         pub const fn $core_function_name(num: $type_name, base: $type_name, string: &mut [u8]) -> &[u8] {
-            $uninit_function_name(num, base, assume_mut_slice_uninit(string))
+            $uninit_core_function_name(num, base, assume_mut_slice_uninit(string))
         }
 
         pub const fn $str_function_name(num: $type_name, base: $type_name, string: &mut [u8]) -> &str {
@@ -298,6 +303,7 @@ macro_rules! impl_signed_numtoa_for {
     (
         $type_name:ty,
         $uninit_function_name:ident,
+        $uninit_str_function_name:ident,
         $core_function_name:ident,
         $str_function_name:ident
     ) => {
@@ -355,6 +361,10 @@ macro_rules! impl_signed_numtoa_for {
             unsafe { assume_slice_init(string.split_at(index.wrapping_add(1)).1) }
         }
 
+        pub const fn $uninit_str_function_name(num: $type_name, base: $type_name, string: &mut [MaybeUninit<u8>]) -> &str {
+            unsafe { core::str::from_utf8_unchecked($uninit_function_name(num, base, string)) }
+        }
+
         pub const fn $core_function_name(num: $type_name, base: $type_name, string: &mut [u8]) -> &[u8] {
            $uninit_function_name(num, base, assume_mut_slice_uninit(string))
         }
@@ -375,16 +385,16 @@ macro_rules! impl_signed_numtoa_for {
     }
 }
 
-impl_signed_numtoa_for!(i16,numtoa_uninit_i16,numtoa_i16,numtoa_i16_str);
-impl_signed_numtoa_for!(i32,numtoa_uninit_i32,numtoa_i32,numtoa_i32_str);
-impl_signed_numtoa_for!(i64,numtoa_uninit_i64,numtoa_i64,numtoa_i64_str);
-impl_signed_numtoa_for!(i128,numtoa_uninit_i128,numtoa_i128,numtoa_i128_str);
-impl_signed_numtoa_for!(isize,numtoa_uninit_isize,numtoa_isize,numtoa_isize_str);
-impl_unsigned_numtoa_for!(u16,numtoa_uninit_u16,numtoa_u16,numtoa_u16_str);
-impl_unsigned_numtoa_for!(u32,numtoa_uninit_u32,numtoa_u32,numtoa_u32_str);
-impl_unsigned_numtoa_for!(u64,numtoa_uninit_u64,numtoa_u64,numtoa_u64_str);
-impl_unsigned_numtoa_for!(u128,numtoa_uninit_u128,numtoa_u128,numtoa_u128_str);
-impl_unsigned_numtoa_for!(usize,numtoa_uninit_usize,numtoa_usize,numtoa_usize_str);
+impl_signed_numtoa_for!(i16,numtoa_uninit_i16,numtoa_uninit_i16_str,numtoa_i16,numtoa_i16_str);
+impl_signed_numtoa_for!(i32,numtoa_uninit_i32,numtoa_uninit_i32_str,numtoa_i32,numtoa_i32_str);
+impl_signed_numtoa_for!(i64,numtoa_uninit_i64,numtoa_uninit_i64_str,numtoa_i64,numtoa_i64_str);
+impl_signed_numtoa_for!(i128,numtoa_uninit_i128,numtoa_uninit_i128_str,numtoa_i128,numtoa_i128_str);
+impl_signed_numtoa_for!(isize,numtoa_uninit_isize,numtoa_uninit_isize_str,numtoa_isize,numtoa_isize_str);
+impl_unsigned_numtoa_for!(u16,numtoa_uninit_u16,numtoa_uninit_u16_str,numtoa_u16,numtoa_u16_str);
+impl_unsigned_numtoa_for!(u32,numtoa_uninit_u32,numtoa_uninit_u32_str,numtoa_u32,numtoa_u32_str);
+impl_unsigned_numtoa_for!(u64,numtoa_uninit_u64,numtoa_uninit_u64_str,numtoa_u64,numtoa_u64_str);
+impl_unsigned_numtoa_for!(u128,numtoa_uninit_u128,numtoa_uninit_u128_str,numtoa_u128,numtoa_u128_str);
+impl_unsigned_numtoa_for!(usize,numtoa_uninit_usize,numtoa_uninit_usize_str,numtoa_usize,numtoa_usize_str);
 
 pub const fn numtoa_uninit_i8(mut num: i8, base: i8, string: &mut [MaybeUninit<u8>]) -> &[u8] {
     if cfg!(debug_assertions) {
@@ -665,6 +675,11 @@ fn base_too_low() {
 #[should_panic]
 fn base_too_high() {
     numtoa_i32(36, 37, &mut [0u8; 100]);
+}
+
+#[test]
+fn str_convenience_uninit() {
+    assert_eq!("256123", numtoa_i32_str(256123_i32, 10, &mut [0u8; 20]));
 }
 
 #[test]
