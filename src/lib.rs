@@ -180,13 +180,11 @@ impl <const N: usize> Debug for AsciiNumber<N> {
     }
 }
 
-#[inline]
 const fn assume_mut_slice_uninit(thing: &mut [u8]) -> &mut [MaybeUninit<u8>] {
     // SAFETY: tbh i think this is always safe
     unsafe { core::mem::transmute::<&mut [u8], &mut [MaybeUninit<u8>]>(thing) }
 }
 
-#[inline]
 const unsafe fn assume_slice_init(thing: &[MaybeUninit<u8>]) -> &[u8] {
     core::mem::transmute::<&[MaybeUninit<u8>], &[u8]>(thing)
 }
