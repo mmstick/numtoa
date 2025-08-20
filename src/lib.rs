@@ -682,12 +682,14 @@ fn str_convenience_wacky_padding() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn base10_u8_array_too_small_core() {
     let _ = numtoa_u8(0_u8, 10, &mut [0u8; 2]);
 }
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn base10_u8_array_too_small_trait() {
     let _ = 0u8.numtoa(10, &mut [0u8; 2]);
 }
@@ -704,6 +706,7 @@ fn base10_u8_array_just_right_trait() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn base10_i8_array_too_small() {
     let mut buffer = [0u8; 3];
     let _ = 0i8.numtoa(10, &mut buffer);
@@ -717,6 +720,7 @@ fn base10_i8_array_just_right() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn base10_i16_array_too_small() {
     let mut buffer = [0u8; 5];
     let _ = 0i16.numtoa(10, &mut buffer);
@@ -730,6 +734,7 @@ fn base10_i16_array_just_right() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn base10_u16_array_too_small() {
     let mut buffer = [0u8; 4];
     let _ = 0u16.numtoa(10, &mut buffer);
@@ -743,6 +748,7 @@ fn base10_u16_array_just_right() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn base10_i32_array_too_small() {
     let mut buffer = [0u8; 10];
     let _ = 0i32.numtoa(10, &mut buffer);
@@ -756,6 +762,7 @@ fn base10_i32_array_just_right() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn base10_u32_array_too_small() {
     let mut buffer = [0u8; 9];
     let _ = 0u32.numtoa(10, &mut buffer);
@@ -769,6 +776,7 @@ fn base10_u32_array_just_right() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn base10_i64_array_too_small() {
     let mut buffer = [0u8; 18];
     let _ = 0i64.numtoa(10, &mut buffer);
@@ -782,6 +790,7 @@ fn base10_i64_array_just_right() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn base10_u64_array_too_small() {
     let mut buffer = [0u8; 19];
     let _ = 0u64.numtoa(10, &mut buffer);
@@ -879,6 +888,7 @@ fn base16_u8_all_base16() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn base10_i128_array_too_small() {
     let mut buffer = [0u8; 38];
     let _ = 0i128.numtoa(10, &mut buffer);
@@ -892,6 +902,7 @@ fn base10_i128_array_just_right() {
 
 #[test]
 #[should_panic]
+#[cfg(debug_assertions)]
 fn base10_u128_array_too_small() {
     let mut buffer = [0u8; 38];
     let _ = 0u128.numtoa(10, &mut buffer);
