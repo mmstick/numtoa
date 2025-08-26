@@ -145,8 +145,8 @@ impl <const N: usize> AsciiNumber<N> {
 
     pub const ZERO: AsciiNumber<N> = {
         let mut string = [0_u8; N];
-        string[0] = b'0';
-        let start = 1;
+        string[N-1] = b'0';
+        let start = N-1;
         AsciiNumber { string, start }
     };
 
