@@ -130,12 +130,26 @@ const DEC_LOOKUP: &[u8; 200] = b"0001020304050607080910111213141516171819\
 const MAX_SUPPORTED_BASE: u128 = LOOKUP.len() as u128;
 
 /// The result of a number conversion to ascii containing a string with at most length `N` bytes/characters
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct AsciiNumber<const N: usize> {
     string: [u8; N],
     start: usize,
 }
 
+pub const ZERO: AsciiNumber<1> = AsciiNumber::<1>::ZERO;
+
 impl <const N: usize> AsciiNumber<N> {
+    
+    #[allow(dead_code)]
+    const MIN_LEN_ASSERTION: () = assert!(N > 0);
+
+    pub const ZERO: AsciiNumber<N> = {
+        let mut string = [0_u8; N];
+        string[0] = b'0';
+        let start = 1;
+        AsciiNumber { string, start }
+    };
+
     /// Get the ascii representation of the number as a byte slice
     pub const fn as_slice(&self) -> &[u8] {
         self.string.split_at(self.start).1
@@ -149,6 +163,13 @@ impl <const N: usize> AsciiNumber<N> {
         (self.string, self.start)
     }
 }
+
+impl <const N: usize> Default for AsciiNumber<N> {
+    fn default() -> Self {
+        Self::ZERO
+    }
+}
+
 
 impl <const N: usize> Deref for AsciiNumber<N> {
     type Target = str;
