@@ -130,7 +130,7 @@ const DEC_LOOKUP: &[u8; 200] = b"0001020304050607080910111213141516171819\
 const MAX_SUPPORTED_BASE: u128 = LOOKUP.len() as u128;
 
 /// The result of a number conversion to ascii containing a string with at most length `N` bytes/characters
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy)]
 pub struct AsciiNumber<const N: usize> {
     string: [u8; N],
     start: usize,
@@ -164,12 +164,19 @@ impl <const N: usize> AsciiNumber<N> {
     }
 }
 
+impl <const N: usize> PartialEq for AsciiNumber<N> {
+    fn eq(&self, other: &AsciiNumber<N>) -> bool {
+        PartialEq::eq(self.as_slice(), other.as_slice())
+    }
+}
+
+impl <const N: usize> Eq for AsciiNumber<N> {}
+
 impl <const N: usize> Default for AsciiNumber<N> {
     fn default() -> Self {
         Self::ZERO
     }
 }
-
 
 impl <const N: usize> Deref for AsciiNumber<N> {
     type Target = str;
