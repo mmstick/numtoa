@@ -136,8 +136,6 @@ pub struct AsciiNumber<const N: usize> {
     start: usize,
 }
 
-pub const ZERO: AsciiNumber<1> = AsciiNumber::<1>::ZERO;
-
 impl <const N: usize> AsciiNumber<N> {
     
     #[allow(dead_code)]
