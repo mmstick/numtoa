@@ -1,0 +1,282 @@
+use core::{ops::Deref, fmt::{Debug, Display, Formatter}};
+
+use numtoa_core::*;
+
+/// API to convert numbers into ascii string in base N. Infallible & const-friendly. Returns an [AsciiNumber].
+pub struct BaseN<const N: usize> {}
+
+/// The result of a [BaseN] number conversion to ascii containing a string with at most length `N` bytes/characters
+#[derive(Clone, Copy)]
+pub struct AsciiNumber<const N: usize> {
+    string: [u8; N],
+    start: usize,
+}
+
+impl <const N: usize> AsciiNumber<N> {
+
+    pub const MAX_CAPACITY: usize = N;
+    
+    #[allow(dead_code)]
+    const MIN_LEN_ASSERTION: () = assert!(N > 0);
+
+    pub const ZERO: AsciiNumber<N> = {
+        let mut string = [0_u8; N];
+        string[N-1] = b'0';
+        let start = N-1;
+        AsciiNumber { string, start }
+    };
+
+    pub const ONE: AsciiNumber<N> = {
+        let mut string = [0_u8; N];
+        string[N-1] = b'0';
+        let start = N-1;
+        AsciiNumber { string, start }
+    };
+
+    /// Get the ascii representation of the number as a byte slice
+    pub const fn as_slice(&self) -> &[u8] {
+        self.string.split_at(self.start).1
+    }
+    /// Get the ascii representation of the number as a string slice
+    pub const fn as_str(&self) -> &str {
+        unsafe { core::str::from_utf8_unchecked(Self::as_slice(self)) }
+    }
+    /// Consume this AsciiNumber to return the underlying buffer & string start position
+    pub const fn into_inner(self) -> ([u8;N], usize) {
+        (self.string, self.start)
+    }
+}
+
+impl <const N: usize> PartialEq for AsciiNumber<N> {
+    fn eq(&self, other: &AsciiNumber<N>) -> bool {
+        PartialEq::eq(self.as_slice(), other.as_slice())
+    }
+}
+
+impl <const N: usize> Eq for AsciiNumber<N> {}
+
+impl <const N: usize> Default for AsciiNumber<N> {
+    fn default() -> Self {
+        Self::ZERO
+    }
+}
+
+impl <const N: usize> Deref for AsciiNumber<N> {
+    type Target = str;
+    fn deref(&self) -> &<Self as Deref>::Target {
+        self.as_str()
+    }
+}
+
+impl <const N: usize> Display for AsciiNumber<N> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), core::fmt::Error> {
+        Display::fmt(self.as_str(), f)
+    }
+}
+
+impl <const N: usize> Debug for AsciiNumber<N> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), core::fmt::Error> {
+        Debug::fmt(self.as_str(), f)
+    }
+}
+
+macro_rules! impl_numtoa_const_for_base_on_type {
+(
+    $type_name:ty,
+    $base:expr,
+    $core_function_name:ident,
+    $base_n_function_name:ident,
+    $padded_function_name:ident,
+    $needed_buffer_size:expr) => {
+
+        impl BaseN<$base> {
+
+            pub const fn $base_n_function_name(num: $type_name) -> AsciiNumber<$needed_buffer_size> {
+                let mut string = [0_u8; $needed_buffer_size];
+                let start = $needed_buffer_size - $core_function_name(num, $base, &mut string).len();
+                return AsciiNumber { string, start }
+            }
+
+            pub const fn $padded_function_name<const LENGTH: usize>(num: $type_name, padding: u8) -> AsciiNumber<LENGTH> {
+                const { assert!(LENGTH >= $needed_buffer_size) }
+                let mut string = [padding; LENGTH];
+                let _ = $core_function_name(num, $base, &mut string);
+                return AsciiNumber { string, start: 0 }
+            }
+
+        }
+
+    };
+}
+
+macro_rules! impl_numtoa_const_for_base {
+    (
+        $base_value:expr,
+        $usize_needed_const:ident,
+        $isize_needed_const:ident,
+        $u8_needed_size:expr,
+        $u16_needed_size:expr,
+        $u32_needed_size:expr,
+        $u64_needed_size:expr,
+        $u128_needed_size:expr,
+        $i8_needed_size:expr,
+        $i16_needed_size:expr,
+        $i32_needed_size:expr,
+        $i64_needed_size:expr,
+        $i128_needed_size:expr,
+) => {
+        impl_numtoa_const_for_base_on_type!(u8,$base_value,numtoa_u8,u8,u8_padded,$u8_needed_size);
+        impl_numtoa_const_for_base_on_type!(u16,$base_value,numtoa_u16,u16,u16_padded,$u16_needed_size);
+        impl_numtoa_const_for_base_on_type!(u32,$base_value,numtoa_u32,u32,u32_padded,$u32_needed_size);
+        impl_numtoa_const_for_base_on_type!(u64,$base_value,numtoa_u64,u64,u64_padded,$u64_needed_size);
+        impl_numtoa_const_for_base_on_type!(u128,$base_value,numtoa_u128,u128,u128_padded,$u128_needed_size);
+        impl_numtoa_const_for_base_on_type!(i8,$base_value,numtoa_i8,i8,i8_padded,$i8_needed_size);
+        impl_numtoa_const_for_base_on_type!(i16,$base_value,numtoa_i16,i16,i16_padded,$i16_needed_size);
+        impl_numtoa_const_for_base_on_type!(i32,$base_value,numtoa_i32,i32,i32_padded,$i32_needed_size);
+        impl_numtoa_const_for_base_on_type!(i64,$base_value,numtoa_i64,i64,i64_padded,$i64_needed_size);
+        impl_numtoa_const_for_base_on_type!(i128,$base_value,numtoa_i128,i128,i128_padded,$i128_needed_size);
+
+        #[cfg(target_pointer_width = "64")]
+        impl_numtoa_const_for_base_on_type!(usize,$base_value,numtoa_usize,usize,usize_padded,$u64_needed_size);
+        #[cfg(target_pointer_width = "64")]
+        impl_numtoa_const_for_base_on_type!(isize,$base_value,numtoa_isize,isize,isize_padded,$i64_needed_size);
+        #[cfg(target_pointer_width = "32")]
+        impl_numtoa_const_for_base_on_type!(usize,$base_value,numtoa_usize,usize,usize_padded,$u32_needed_size);
+        #[cfg(target_pointer_width = "32")]
+        impl_numtoa_const_for_base_on_type!(isize,$base_value,numtoa_isize,isize,isize_padded,$i32_needed_size);
+        #[cfg(target_pointer_width = "16")]
+        impl_numtoa_const_for_base_on_type!(usize,$base_value,numtoa_usize,usize,usize_padded,$u16_needed_size);
+        #[cfg(target_pointer_width = "16")]
+        impl_numtoa_const_for_base_on_type!(isize,$base_value,numtoa_isize,isize,isize_padded,$i16_needed_size);
+        
+    };
+}
+
+impl_numtoa_const_for_base!(
+    2,
+    BASE2_USIZE_NEEDED,
+    BASE2_ISIZE_NEEDED,
+    8,
+    16,
+    32,
+    64,
+    128,
+    9,
+    17,
+    33,
+    65,
+    129,
+);
+
+impl_numtoa_const_for_base!(
+    8,
+    BASE8_USIZE_NEEDED,
+    BASE8_ISIZE_NEEDED,
+    3,  // 377
+    6,  // 177777
+    11, // 37777777777
+    22, // 1777777777777777777777
+    43, // 3777777777777777777777777777777777777777777
+    4,  // -200
+    7,  // -100000
+    12, // -20000000000
+    23, // -1000000000000000000000
+    44,  // -2000000000000000000000000000000000000000000
+);
+
+impl_numtoa_const_for_base!(
+    10,
+    BASE10_USIZE_NEEDED,
+    BASE10_ISIZE_NEEDED,
+    3,  // 255
+    5,  // 65535
+    10, // 4294967295
+    20, // 18446744073709551615
+    39, // 340282366920938463463374607431768211455
+    4,  // -128
+    6,  // -32768
+    11, // -2147483648
+    20, // -9223372036854775808
+    40,  // -170141183460469231731687303715884105728
+);
+
+impl_numtoa_const_for_base!(
+    16,
+    BASE16_USIZE_NEEDED,
+    BASE16_ISIZE_NEEDED,
+    2,
+    4,
+    8,
+    16,
+    32,
+    3,
+    5,
+    9,
+    17,
+    33,
+);
+
+
+#[test]
+fn str_convenience_base2() {
+    assert_eq!("111110100001111011", BaseN::<2>::i32(256123).as_str());
+}
+
+#[test]
+fn str_convenience_base8() {
+    assert_eq!("764173", BaseN::<8>::i32(256123).as_str());
+}
+
+#[test]
+fn str_convenience_base10() {
+    assert_eq!("256123", BaseN::<10>::i32(256123).as_str());
+}
+
+#[test]
+fn str_convenience_base10_padded() {
+    assert_eq!("00000000000000256123", BaseN::<10>::i32_padded::<20>(256123, b'0').as_str());
+}
+
+#[test]
+fn str_convenience_base16() {
+    assert_eq!("3E87B", BaseN::<16>::i32(256123).as_str());
+}
+
+#[test]
+fn str_convenience_base16_padded() {
+    assert_eq!("0000000000000003E87B", BaseN::<16>::i32_padded::<20>(256123, b'0').as_str());
+}
+
+#[test]
+fn str_convenience_wacky_padding() {
+    assert_eq!("##############-3E87B", BaseN::<16>::i32_padded::<20>(-256123, b'#').as_str());
+    assert_eq!("@@@@@@@@@@@-111", BaseN::<10>::i8_padded::<15>(-111, b'@').as_str());
+}
+
+#[test]
+fn base10_i8_all_base10() {
+    for i in i8::MIN..i8::MAX {
+        let _ = BaseN::<10>::i8(i);
+    }
+}
+
+#[test]
+fn base16_i8_all_base16() {
+    for i in i8::MIN..i8::MAX {
+        let _ = BaseN::<16>::i8(i);
+    }
+}
+
+#[test]
+fn base10_u8_all_base10() {
+    for i in u8::MIN..u8::MAX {
+        let _ = BaseN::<10>::u8(i);
+    }
+}
+
+#[test]
+fn base16_u8_all_base16() {
+    for i in u8::MIN..u8::MAX {
+        let _ = BaseN::<16>::u8(i);
+    }
+}

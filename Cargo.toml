@@ -9,3 +9,9 @@ repository = "https://github.com/mmstick/numtoa"
 keywords = ["numbers", "convert", "numtoa", "itoa", "no_std"]
 categories = ["value-formatting", "no-std", "no-std::no-alloc", "embedded"]
 readme = "README.md"
+
+[features]
+default = ["api-core","api-trait","api-const"]
+api-core = []
+api-trait = []
+api-const = []
