@@ -161,13 +161,13 @@ fn base10_u32_array_just_right() {
 #[should_panic]
 #[cfg(debug_assertions)]
 fn base10_i64_array_too_small() {
-    let mut buffer = [0u8; 18];
+    let mut buffer = [0u8; 19];
     let _ = 0i64.numtoa(10, &mut buffer);
 }
 
 #[test]
 fn base10_i64_array_just_right() {
-    let mut buffer = [0u8; 19];
+    let mut buffer = [0u8; 20];
     let _ = 0i64.numtoa(10, &mut buffer);
 }
 
@@ -225,13 +225,13 @@ fn base16_u8_all_trait() {
 #[should_panic]
 #[cfg(debug_assertions)]
 fn base10_i128_array_too_small() {
-    let mut buffer = [0u8; 38];
+    let mut buffer = [0u8; 39];
     let _ = 0i128.numtoa(10, &mut buffer);
 }
 
 #[test]
 fn base10_i128_array_just_right() {
-    let mut buffer = [0u8; 39];
+    let mut buffer = [0u8; 40];
     let _ = 0i128.numtoa(10, &mut buffer);
 }
 

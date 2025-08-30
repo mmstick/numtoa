@@ -1,11 +1,11 @@
-use core::{ops::Deref, fmt::{Debug, Display, Formatter}};
+use core::{fmt::{Debug, Display, Formatter}, num, ops::Deref, u64, u8};
 
 use numtoa_core::*;
 
-/// API to convert numbers into ascii string in base N. Infallible & const-friendly. Returns an [AsciiNumber].
+/// API to convert numbers into ascii string in base N. Infallible & const-friendly. Returns an [AsciiNumber] of fixed size.
 pub struct BaseN<const N: usize> {}
 
-/// The result of a [BaseN] number conversion to ascii containing a string with at most length `N` bytes/characters
+/// The immutable result of a [BaseN] number conversion to ascii, containing a string containing at most N bytes / N ascii characters.
 #[derive(Clone, Copy)]
 pub struct AsciiNumber<const N: usize> {
     string: [u8; N],
@@ -125,7 +125,8 @@ macro_rules! impl_numtoa_const_for_base {
         $i64_needed_size:expr,
         $i128_needed_size:expr,
 ) => {
-        impl_numtoa_const_for_base_on_type!(u8,$base_value,numtoa_u8,u8,u8_padded,$u8_needed_size);
+        impl_numtoa_const_for_base_on_type!(u8,$base_value,numtoa_u8,u8,u8_padded,{required_space($base_value as u128, u8::MAX as u128, false)});
+        // impl_numtoa_const_for_base_on_type!(u8,$base_value,numtoa_u8,u8,u8_padded,$u8_needed_size);
         impl_numtoa_const_for_base_on_type!(u16,$base_value,numtoa_u16,u16,u16_padded,$u16_needed_size);
         impl_numtoa_const_for_base_on_type!(u32,$base_value,numtoa_u32,u32,u32_padded,$u32_needed_size);
         impl_numtoa_const_for_base_on_type!(u64,$base_value,numtoa_u64,u64,u64_padded,$u64_needed_size);
