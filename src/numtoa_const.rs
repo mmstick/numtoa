@@ -2,7 +2,7 @@ use core::{fmt::{Debug, Display, Formatter}, ops::Deref, u64, u8};
 
 use numtoa_core::*;
 
-/// API to convert numbers into ascii string in base N. Infallible & const-friendly. Returns an [AsciiNumber] of fixed size.
+/// API to convert numbers into ascii string in base N. Infallible & const-friendly. Returns an [AsciiNumber] of fixed size based on the selected base and numeric type.
 pub struct BaseN<const N: usize> {}
 
 /// The immutable result of a [BaseN] number conversion to ascii, containing a string containing at most N bytes / N ascii characters.
