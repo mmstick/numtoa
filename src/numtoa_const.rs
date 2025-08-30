@@ -1,4 +1,4 @@
-use core::{fmt::{Debug, Display, Formatter}, num, ops::Deref, u64, u8};
+use core::{fmt::{Debug, Display, Formatter}, ops::Deref, u64, u8};
 
 use numtoa_core::*;
 
