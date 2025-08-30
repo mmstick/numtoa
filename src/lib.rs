@@ -76,13 +76,10 @@
 #![no_std]
 
 mod numtoa_core;
-#[cfg(feature = "api-core")]
 pub use numtoa_core::*;
 
 mod numtoa_trait;
-#[cfg(feature = "api-trait")]
 pub use numtoa_trait::*;
 
 mod numtoa_const;
-#[cfg(feature = "api-const")]
 pub use numtoa_const::*;
