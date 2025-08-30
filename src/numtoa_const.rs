@@ -109,114 +109,38 @@ macro_rules! impl_numtoa_const_for_base_on_type {
     };
 }
 
-macro_rules! impl_numtoa_const_for_base {
-    (
-        $base_value:expr,
-        $usize_needed_const:ident,
-        $isize_needed_const:ident,
-        $u8_needed_size:expr,
-        $u16_needed_size:expr,
-        $u32_needed_size:expr,
-        $u64_needed_size:expr,
-        $u128_needed_size:expr,
-        $i8_needed_size:expr,
-        $i16_needed_size:expr,
-        $i32_needed_size:expr,
-        $i64_needed_size:expr,
-        $i128_needed_size:expr,
-) => {
+macro_rules! impl_numtoa_const_for_base_n {
+    ($base_value:expr) => {
         impl_numtoa_const_for_base_on_type!(u8,$base_value,numtoa_u8,u8,u8_padded,{required_space($base_value as u128, u8::MAX as u128, false)});
-        // impl_numtoa_const_for_base_on_type!(u8,$base_value,numtoa_u8,u8,u8_padded,$u8_needed_size);
-        impl_numtoa_const_for_base_on_type!(u16,$base_value,numtoa_u16,u16,u16_padded,$u16_needed_size);
-        impl_numtoa_const_for_base_on_type!(u32,$base_value,numtoa_u32,u32,u32_padded,$u32_needed_size);
-        impl_numtoa_const_for_base_on_type!(u64,$base_value,numtoa_u64,u64,u64_padded,$u64_needed_size);
-        impl_numtoa_const_for_base_on_type!(u128,$base_value,numtoa_u128,u128,u128_padded,$u128_needed_size);
-        impl_numtoa_const_for_base_on_type!(i8,$base_value,numtoa_i8,i8,i8_padded,$i8_needed_size);
-        impl_numtoa_const_for_base_on_type!(i16,$base_value,numtoa_i16,i16,i16_padded,$i16_needed_size);
-        impl_numtoa_const_for_base_on_type!(i32,$base_value,numtoa_i32,i32,i32_padded,$i32_needed_size);
-        impl_numtoa_const_for_base_on_type!(i64,$base_value,numtoa_i64,i64,i64_padded,$i64_needed_size);
-        impl_numtoa_const_for_base_on_type!(i128,$base_value,numtoa_i128,i128,i128_padded,$i128_needed_size);
-
-        #[cfg(target_pointer_width = "64")]
-        impl_numtoa_const_for_base_on_type!(usize,$base_value,numtoa_usize,usize,usize_padded,$u64_needed_size);
-        #[cfg(target_pointer_width = "64")]
-        impl_numtoa_const_for_base_on_type!(isize,$base_value,numtoa_isize,isize,isize_padded,$i64_needed_size);
-        #[cfg(target_pointer_width = "32")]
-        impl_numtoa_const_for_base_on_type!(usize,$base_value,numtoa_usize,usize,usize_padded,$u32_needed_size);
-        #[cfg(target_pointer_width = "32")]
-        impl_numtoa_const_for_base_on_type!(isize,$base_value,numtoa_isize,isize,isize_padded,$i32_needed_size);
-        #[cfg(target_pointer_width = "16")]
-        impl_numtoa_const_for_base_on_type!(usize,$base_value,numtoa_usize,usize,usize_padded,$u16_needed_size);
-        #[cfg(target_pointer_width = "16")]
-        impl_numtoa_const_for_base_on_type!(isize,$base_value,numtoa_isize,isize,isize_padded,$i16_needed_size);
-        
+        impl_numtoa_const_for_base_on_type!(u16,$base_value,numtoa_u16,u16,u16_padded,{required_space($base_value as u128, u16::MAX as u128, false)});
+        impl_numtoa_const_for_base_on_type!(u32,$base_value,numtoa_u32,u32,u32_padded,{required_space($base_value as u128, u32::MAX as u128, false)});
+        impl_numtoa_const_for_base_on_type!(u64,$base_value,numtoa_u64,u64,u64_padded,{required_space($base_value as u128, u64::MAX as u128, false)});
+        impl_numtoa_const_for_base_on_type!(u128,$base_value,numtoa_u128,u128,u128_padded,{required_space($base_value as u128, u128::MAX as u128, false)});
+        impl_numtoa_const_for_base_on_type!(usize,$base_value,numtoa_usize,usize,usize_padded,{required_space($base_value as u128, usize::MAX as u128, false)});
+        impl_numtoa_const_for_base_on_type!(i8,$base_value,numtoa_i8,i8,i8_padded,{required_space($base_value as u128, i8::MIN.unsigned_abs() as u128, true)});
+        impl_numtoa_const_for_base_on_type!(i16,$base_value,numtoa_i16,i16,i16_padded,{required_space($base_value as u128, i16::MIN.unsigned_abs() as u128, true)});
+        impl_numtoa_const_for_base_on_type!(i32,$base_value,numtoa_i32,i32,i32_padded,{required_space($base_value as u128, i32::MIN.unsigned_abs() as u128, true)});
+        impl_numtoa_const_for_base_on_type!(i64,$base_value,numtoa_i64,i64,i64_padded,{required_space($base_value as u128, i64::MIN.unsigned_abs() as u128, true)});
+        impl_numtoa_const_for_base_on_type!(i128,$base_value,numtoa_i128,i128,i128_padded,{required_space($base_value as u128, i128::MIN.unsigned_abs() as u128, true)});
+        impl_numtoa_const_for_base_on_type!(isize,$base_value,numtoa_isize,isize,isize_padded,{required_space($base_value as u128, isize::MIN.unsigned_abs() as u128, true)});
     };
 }
 
-impl_numtoa_const_for_base!(
-    2,
-    BASE2_USIZE_NEEDED,
-    BASE2_ISIZE_NEEDED,
-    8,
-    16,
-    32,
-    64,
-    128,
-    9,
-    17,
-    33,
-    65,
-    129,
-);
-
-impl_numtoa_const_for_base!(
-    8,
-    BASE8_USIZE_NEEDED,
-    BASE8_ISIZE_NEEDED,
-    3,  // 377
-    6,  // 177777
-    11, // 37777777777
-    22, // 1777777777777777777777
-    43, // 3777777777777777777777777777777777777777777
-    4,  // -200
-    7,  // -100000
-    12, // -20000000000
-    23, // -1000000000000000000000
-    44,  // -2000000000000000000000000000000000000000000
-);
-
-impl_numtoa_const_for_base!(
-    10,
-    BASE10_USIZE_NEEDED,
-    BASE10_ISIZE_NEEDED,
-    3,  // 255
-    5,  // 65535
-    10, // 4294967295
-    20, // 18446744073709551615
-    39, // 340282366920938463463374607431768211455
-    4,  // -128
-    6,  // -32768
-    11, // -2147483648
-    20, // -9223372036854775808
-    40,  // -170141183460469231731687303715884105728
-);
-
-impl_numtoa_const_for_base!(
-    16,
-    BASE16_USIZE_NEEDED,
-    BASE16_ISIZE_NEEDED,
-    2,
-    4,
-    8,
-    16,
-    32,
-    3,
-    5,
-    9,
-    17,
-    33,
-);
-
+impl_numtoa_const_for_base_n!(2);
+impl_numtoa_const_for_base_n!(3);
+impl_numtoa_const_for_base_n!(4);
+impl_numtoa_const_for_base_n!(5);
+impl_numtoa_const_for_base_n!(6);
+impl_numtoa_const_for_base_n!(7);
+impl_numtoa_const_for_base_n!(8);
+impl_numtoa_const_for_base_n!(9);
+impl_numtoa_const_for_base_n!(10);
+impl_numtoa_const_for_base_n!(11);
+impl_numtoa_const_for_base_n!(12);
+impl_numtoa_const_for_base_n!(13);
+impl_numtoa_const_for_base_n!(14);
+impl_numtoa_const_for_base_n!(15);
+impl_numtoa_const_for_base_n!(16);
 
 #[test]
 fn str_convenience_base2() {
