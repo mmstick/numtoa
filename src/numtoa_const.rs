@@ -1,4 +1,8 @@
-use core::{fmt::{Debug, Display, Formatter}, ops::Deref, u64, u8};
+use core::{
+    fmt::{Debug, Display, Formatter},
+    ops::Deref,
+    u64, u8,
+};
 
 use numtoa_core::*;
 
@@ -12,24 +16,23 @@ pub struct AsciiNumber<const N: usize> {
     start: usize,
 }
 
-impl <const N: usize> AsciiNumber<N> {
-
+impl<const N: usize> AsciiNumber<N> {
     pub const MAX_CAPACITY: usize = N;
-    
+
     #[allow(dead_code)]
     const MIN_LEN_ASSERTION: () = assert!(N > 0);
 
     pub const ZERO: AsciiNumber<N> = {
         let mut string = [0_u8; N];
-        string[N-1] = b'0';
-        let start = N-1;
+        string[N - 1] = b'0';
+        let start = N - 1;
         AsciiNumber { string, start }
     };
 
     pub const ONE: AsciiNumber<N> = {
         let mut string = [0_u8; N];
-        string[N-1] = b'0';
-        let start = N-1;
+        string[N - 1] = b'0';
+        let start = N - 1;
         AsciiNumber { string, start }
     };
 
@@ -42,101 +45,199 @@ impl <const N: usize> AsciiNumber<N> {
         unsafe { core::str::from_utf8_unchecked(Self::as_slice(self)) }
     }
     /// Consume this AsciiNumber to return the underlying buffer & string start position
-    pub const fn into_inner(self) -> ([u8;N], usize) {
+    pub const fn into_inner(self) -> ([u8; N], usize) {
         (self.string, self.start)
     }
 }
 
-impl <const N: usize> PartialEq for AsciiNumber<N> {
+impl<const N: usize> PartialEq for AsciiNumber<N> {
     fn eq(&self, other: &AsciiNumber<N>) -> bool {
         PartialEq::eq(self.as_slice(), other.as_slice())
     }
 }
 
-impl <const N: usize> Eq for AsciiNumber<N> {}
+impl<const N: usize> Eq for AsciiNumber<N> {}
 
-impl <const N: usize> Default for AsciiNumber<N> {
+impl<const N: usize> Default for AsciiNumber<N> {
     fn default() -> Self {
         Self::ZERO
     }
 }
 
-impl <const N: usize> Deref for AsciiNumber<N> {
+impl<const N: usize> Deref for AsciiNumber<N> {
     type Target = str;
     fn deref(&self) -> &<Self as Deref>::Target {
         self.as_str()
     }
 }
 
-impl <const N: usize> Display for AsciiNumber<N> {
+impl<const N: usize> Display for AsciiNumber<N> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), core::fmt::Error> {
         Display::fmt(self.as_str(), f)
     }
 }
 
-impl <const N: usize> Debug for AsciiNumber<N> {
+impl<const N: usize> Debug for AsciiNumber<N> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), core::fmt::Error> {
         Debug::fmt(self.as_str(), f)
     }
 }
 
 macro_rules! impl_numtoa_const_for_base_on_type {
-(
+    (
     $type_name:ty,
     $base:expr,
     $core_function_name:ident,
     $base_n_function_name:ident,
     $padded_function_name:ident,
     $needed_buffer_size:expr) => {
-
         impl BaseN<$base> {
-
-            pub const fn $base_n_function_name(num: $type_name) -> AsciiNumber<{$needed_buffer_size}> {
-                let mut string = [0_u8; {$needed_buffer_size}];
-                let start = $needed_buffer_size - $core_function_name(num, $base, &mut string).len();
-                return AsciiNumber { string, start }
+            pub const fn $base_n_function_name(
+                num: $type_name,
+            ) -> AsciiNumber<{ $needed_buffer_size }> {
+                let mut string = [0_u8; { $needed_buffer_size }];
+                let start =
+                    $needed_buffer_size - $core_function_name(num, $base, &mut string).len();
+                return AsciiNumber { string, start };
             }
 
-            pub const fn $padded_function_name<const LENGTH: usize>(num: $type_name, padding: u8) -> AsciiNumber<LENGTH> {
-                const { assert!(LENGTH >= {$needed_buffer_size}) }
+            pub const fn $padded_function_name<const LENGTH: usize>(
+                num: $type_name,
+                padding: u8,
+            ) -> AsciiNumber<LENGTH> {
+                const { assert!(LENGTH >= { $needed_buffer_size }) }
                 let mut string = [padding; LENGTH];
                 let _ = $core_function_name(num, $base, &mut string);
-                return AsciiNumber { string, start: 0 }
+                return AsciiNumber { string, start: 0 };
             }
-
         }
-
     };
 }
 
 macro_rules! impl_numtoa_const_for_base_n {
     ($base_value:expr) => {
         impl BaseN<$base_value> {
-            pub const REQUIRED_SPACE_U8: usize = required_space($base_value as u128, u8::MAX as u128, false);
-            pub const REQUIRED_SPACE_U16: usize = required_space($base_value as u128, u16::MAX as u128, false);
-            pub const REQUIRED_SPACE_U32: usize = required_space($base_value as u128, u32::MAX as u128, false);
-            pub const REQUIRED_SPACE_U64: usize = required_space($base_value as u128, u64::MAX as u128, false);
-            pub const REQUIRED_SPACE_U128: usize = required_space($base_value as u128, u128::MAX as u128, false);
-            pub const REQUIRED_SPACE_USIZE: usize = required_space($base_value as u128, usize::MAX as u128, false);
-            pub const REQUIRED_SPACE_I8: usize = required_space($base_value as u128, i8::MIN.unsigned_abs() as u128, true);
-            pub const REQUIRED_SPACE_I16: usize = required_space($base_value as u128, i8::MIN.unsigned_abs() as u128, true);
-            pub const REQUIRED_SPACE_I32: usize = required_space($base_value as u128, i32::MIN.unsigned_abs() as u128, true);
-            pub const REQUIRED_SPACE_I64: usize = required_space($base_value as u128, i64::MIN.unsigned_abs() as u128, true);
-            pub const REQUIRED_SPACE_I128: usize = required_space($base_value as u128, i128::MIN.unsigned_abs() as u128, true);
-            pub const REQUIRED_SPACE_ISIZE: usize = required_space($base_value as u128, isize::MIN.unsigned_abs() as u128, true);
+            pub const REQUIRED_SPACE_U8: usize =
+                required_space($base_value as u128, u8::MAX as u128, false);
+            pub const REQUIRED_SPACE_U16: usize =
+                required_space($base_value as u128, u16::MAX as u128, false);
+            pub const REQUIRED_SPACE_U32: usize =
+                required_space($base_value as u128, u32::MAX as u128, false);
+            pub const REQUIRED_SPACE_U64: usize =
+                required_space($base_value as u128, u64::MAX as u128, false);
+            pub const REQUIRED_SPACE_U128: usize =
+                required_space($base_value as u128, u128::MAX as u128, false);
+            pub const REQUIRED_SPACE_USIZE: usize =
+                required_space($base_value as u128, usize::MAX as u128, false);
+            pub const REQUIRED_SPACE_I8: usize =
+                required_space($base_value as u128, i8::MIN.unsigned_abs() as u128, true);
+            pub const REQUIRED_SPACE_I16: usize =
+                required_space($base_value as u128, i8::MIN.unsigned_abs() as u128, true);
+            pub const REQUIRED_SPACE_I32: usize =
+                required_space($base_value as u128, i32::MIN.unsigned_abs() as u128, true);
+            pub const REQUIRED_SPACE_I64: usize =
+                required_space($base_value as u128, i64::MIN.unsigned_abs() as u128, true);
+            pub const REQUIRED_SPACE_I128: usize =
+                required_space($base_value as u128, i128::MIN.unsigned_abs() as u128, true);
+            pub const REQUIRED_SPACE_ISIZE: usize =
+                required_space($base_value as u128, isize::MIN.unsigned_abs() as u128, true);
         }
-        impl_numtoa_const_for_base_on_type!(u8,$base_value,numtoa_u8,u8,u8_padded,Self::REQUIRED_SPACE_U8);
-        impl_numtoa_const_for_base_on_type!(u16,$base_value,numtoa_u16,u16,u16_padded,Self::REQUIRED_SPACE_U16);
-        impl_numtoa_const_for_base_on_type!(u32,$base_value,numtoa_u32,u32,u32_padded,Self::REQUIRED_SPACE_U32);
-        impl_numtoa_const_for_base_on_type!(u64,$base_value,numtoa_u64,u64,u64_padded,Self::REQUIRED_SPACE_U64);
-        impl_numtoa_const_for_base_on_type!(u128,$base_value,numtoa_u128,u128,u128_padded,Self::REQUIRED_SPACE_U128);
-        impl_numtoa_const_for_base_on_type!(usize,$base_value,numtoa_usize,usize,usize_padded,Self::REQUIRED_SPACE_USIZE);
-        impl_numtoa_const_for_base_on_type!(i8,$base_value,numtoa_i8,i8,i8_padded,Self::REQUIRED_SPACE_I8);
-        impl_numtoa_const_for_base_on_type!(i16,$base_value,numtoa_i16,i16,i16_padded,Self::REQUIRED_SPACE_I16);
-        impl_numtoa_const_for_base_on_type!(i32,$base_value,numtoa_i32,i32,i32_padded,Self::REQUIRED_SPACE_I32);
-        impl_numtoa_const_for_base_on_type!(i64,$base_value,numtoa_i64,i64,i64_padded,Self::REQUIRED_SPACE_I64);
-        impl_numtoa_const_for_base_on_type!(i128,$base_value,numtoa_i128,i128,i128_padded,Self::REQUIRED_SPACE_I128);
-        impl_numtoa_const_for_base_on_type!(isize,$base_value,numtoa_isize,isize,isize_padded,Self::REQUIRED_SPACE_ISIZE);
+        impl_numtoa_const_for_base_on_type!(
+            u8,
+            $base_value,
+            numtoa_u8,
+            u8,
+            u8_padded,
+            Self::REQUIRED_SPACE_U8
+        );
+        impl_numtoa_const_for_base_on_type!(
+            u16,
+            $base_value,
+            numtoa_u16,
+            u16,
+            u16_padded,
+            Self::REQUIRED_SPACE_U16
+        );
+        impl_numtoa_const_for_base_on_type!(
+            u32,
+            $base_value,
+            numtoa_u32,
+            u32,
+            u32_padded,
+            Self::REQUIRED_SPACE_U32
+        );
+        impl_numtoa_const_for_base_on_type!(
+            u64,
+            $base_value,
+            numtoa_u64,
+            u64,
+            u64_padded,
+            Self::REQUIRED_SPACE_U64
+        );
+        impl_numtoa_const_for_base_on_type!(
+            u128,
+            $base_value,
+            numtoa_u128,
+            u128,
+            u128_padded,
+            Self::REQUIRED_SPACE_U128
+        );
+        impl_numtoa_const_for_base_on_type!(
+            usize,
+            $base_value,
+            numtoa_usize,
+            usize,
+            usize_padded,
+            Self::REQUIRED_SPACE_USIZE
+        );
+        impl_numtoa_const_for_base_on_type!(
+            i8,
+            $base_value,
+            numtoa_i8,
+            i8,
+            i8_padded,
+            Self::REQUIRED_SPACE_I8
+        );
+        impl_numtoa_const_for_base_on_type!(
+            i16,
+            $base_value,
+            numtoa_i16,
+            i16,
+            i16_padded,
+            Self::REQUIRED_SPACE_I16
+        );
+        impl_numtoa_const_for_base_on_type!(
+            i32,
+            $base_value,
+            numtoa_i32,
+            i32,
+            i32_padded,
+            Self::REQUIRED_SPACE_I32
+        );
+        impl_numtoa_const_for_base_on_type!(
+            i64,
+            $base_value,
+            numtoa_i64,
+            i64,
+            i64_padded,
+            Self::REQUIRED_SPACE_I64
+        );
+        impl_numtoa_const_for_base_on_type!(
+            i128,
+            $base_value,
+            numtoa_i128,
+            i128,
+            i128_padded,
+            Self::REQUIRED_SPACE_I128
+        );
+        impl_numtoa_const_for_base_on_type!(
+            isize,
+            $base_value,
+            numtoa_isize,
+            isize,
+            isize_padded,
+            Self::REQUIRED_SPACE_ISIZE
+        );
     };
 }
 
@@ -173,7 +274,10 @@ fn str_convenience_base10() {
 
 #[test]
 fn str_convenience_base10_padded() {
-    assert_eq!("00000000000000256123", BaseN::<10>::i32_padded::<20>(256123, b'0').as_str());
+    assert_eq!(
+        "00000000000000256123",
+        BaseN::<10>::i32_padded::<20>(256123, b'0').as_str()
+    );
 }
 
 #[test]
@@ -183,13 +287,22 @@ fn str_convenience_base16() {
 
 #[test]
 fn str_convenience_base16_padded() {
-    assert_eq!("0000000000000003E87B", BaseN::<16>::i32_padded::<20>(256123, b'0').as_str());
+    assert_eq!(
+        "0000000000000003E87B",
+        BaseN::<16>::i32_padded::<20>(256123, b'0').as_str()
+    );
 }
 
 #[test]
 fn str_convenience_wacky_padding() {
-    assert_eq!("##############-3E87B", BaseN::<16>::i32_padded::<20>(-256123, b'#').as_str());
-    assert_eq!("@@@@@@@@@@@-111", BaseN::<10>::i8_padded::<15>(-111, b'@').as_str());
+    assert_eq!(
+        "##############-3E87B",
+        BaseN::<16>::i32_padded::<20>(-256123, b'#').as_str()
+    );
+    assert_eq!(
+        "@@@@@@@@@@@-111",
+        BaseN::<10>::i8_padded::<15>(-111, b'@').as_str()
+    );
 }
 
 #[test]

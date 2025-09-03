@@ -21,13 +21,13 @@ pub trait NumToA {
     ///
     /// // Allocate a buffer that will be reused in each iteration.
     /// let mut buffer = [0u8; 20];
-    /// 
+    ///
     /// let number = 15325;
     /// let _ = stdout.write(number.numtoa(10, &mut buffer));
-    /// 
+    ///
     /// let number = 1241;
     /// let _ = stdout.write(number.numtoa(10, &mut buffer));
-    /// 
+    ///
     /// assert_eq!(12345.numtoa(10, &mut buffer), b"12345");
     /// ```
     fn numtoa(self, base: Self, string: &mut [u8]) -> &[u8];
@@ -44,7 +44,7 @@ macro_rules! impl_numtoa_trait {
     ) => {
         impl NumToA for $type_name {
             fn numtoa(self, base: $type_name, string: &mut [u8]) -> &[u8] {
-                $core_function_name(self, base, string)                
+                $core_function_name(self, base, string)
             }
 
             fn numtoa_str(self, base: $type_name, buf: &mut [u8]) -> &str {
@@ -54,25 +54,23 @@ macro_rules! impl_numtoa_trait {
     };
 }
 
-impl_numtoa_trait!(i8,numtoa_i8,numtoa_i8_str);
-impl_numtoa_trait!(i16,numtoa_i16,numtoa_i16_str);
-impl_numtoa_trait!(i32,numtoa_i32,numtoa_i32_str);
-impl_numtoa_trait!(i64,numtoa_i64,numtoa_i64_str);
-impl_numtoa_trait!(i128,numtoa_i128,numtoa_i128_str);
-impl_numtoa_trait!(isize,numtoa_isize,numtoa_isize_str);
-impl_numtoa_trait!(u8,numtoa_u8,numtoa_u8_str);
-impl_numtoa_trait!(u16,numtoa_u16,numtoa_u16_str);
-impl_numtoa_trait!(u32,numtoa_u32,numtoa_u32_str);
-impl_numtoa_trait!(u64,numtoa_u64,numtoa_u64_str);
-impl_numtoa_trait!(u128,numtoa_u128,numtoa_u128_str);
-impl_numtoa_trait!(usize,numtoa_usize,numtoa_usize_str);
-
+impl_numtoa_trait!(i8, numtoa_i8, numtoa_i8_str);
+impl_numtoa_trait!(i16, numtoa_i16, numtoa_i16_str);
+impl_numtoa_trait!(i32, numtoa_i32, numtoa_i32_str);
+impl_numtoa_trait!(i64, numtoa_i64, numtoa_i64_str);
+impl_numtoa_trait!(i128, numtoa_i128, numtoa_i128_str);
+impl_numtoa_trait!(isize, numtoa_isize, numtoa_isize_str);
+impl_numtoa_trait!(u8, numtoa_u8, numtoa_u8_str);
+impl_numtoa_trait!(u16, numtoa_u16, numtoa_u16_str);
+impl_numtoa_trait!(u32, numtoa_u32, numtoa_u32_str);
+impl_numtoa_trait!(u64, numtoa_u64, numtoa_u64_str);
+impl_numtoa_trait!(u128, numtoa_u128, numtoa_u128_str);
+impl_numtoa_trait!(usize, numtoa_usize, numtoa_usize_str);
 
 #[test]
 fn str_convenience_trait() {
     assert_eq!("256123", 256123.numtoa_str(10, &mut [0u8; 20]));
 }
-
 
 #[test]
 #[should_panic]
@@ -80,7 +78,6 @@ fn str_convenience_trait() {
 fn base10_u8_array_too_small_trait() {
     let _ = 0u8.numtoa(10, &mut [0u8; 2]);
 }
-
 
 #[test]
 fn base10_u8_array_just_right_trait() {
@@ -220,7 +217,6 @@ fn base16_u8_all_trait() {
     }
 }
 
-
 #[test]
 #[should_panic]
 #[cfg(debug_assertions)]
@@ -255,8 +251,14 @@ fn base8_min_signed_number() {
     assert_eq!((-128i8).numtoa(8, &mut buffer), b"-200");
     assert_eq!((-32768i16).numtoa(8, &mut buffer), b"-100000");
     assert_eq!((-2147483648i32).numtoa(8, &mut buffer), b"-20000000000");
-    assert_eq!((-9223372036854775808i64).numtoa(8, &mut buffer), b"-1000000000000000000000");
-    assert_eq!((i128::MIN).numtoa(8, &mut buffer), b"-2000000000000000000000000000000000000000000");
+    assert_eq!(
+        (-9223372036854775808i64).numtoa(8, &mut buffer),
+        b"-1000000000000000000000"
+    );
+    assert_eq!(
+        (i128::MIN).numtoa(8, &mut buffer),
+        b"-2000000000000000000000000000000000000000000"
+    );
 }
 
 #[test]
@@ -265,6 +267,12 @@ fn base16_min_signed_number() {
     assert_eq!((-128i8).numtoa(16, &mut buffer), b"-80");
     assert_eq!((-32768i16).numtoa(16, &mut buffer), b"-8000");
     assert_eq!((-2147483648i32).numtoa(16, &mut buffer), b"-80000000");
-    assert_eq!((-9223372036854775808i64).numtoa(16, &mut buffer), b"-8000000000000000");
-    assert_eq!((i128::MIN).numtoa(16, &mut buffer), b"-80000000000000000000000000000000");
+    assert_eq!(
+        (-9223372036854775808i64).numtoa(16, &mut buffer),
+        b"-8000000000000000"
+    );
+    assert_eq!(
+        (i128::MIN).numtoa(16, &mut buffer),
+        b"-80000000000000000000000000000000"
+    );
 }
