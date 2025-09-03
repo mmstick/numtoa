@@ -98,7 +98,7 @@ macro_rules! impl_numtoa_const_for_base_on_type {
             }
 
             pub const fn $padded_function_name<const LENGTH: usize>(num: $type_name, padding: u8) -> AsciiNumber<LENGTH> {
-                const { assert!(LENGTH >= $needed_buffer_size) }
+                const { assert!(LENGTH >= {$needed_buffer_size}) }
                 let mut string = [padding; LENGTH];
                 let _ = $core_function_name(num, $base, &mut string);
                 return AsciiNumber { string, start: 0 }
