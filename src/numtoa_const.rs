@@ -92,14 +92,14 @@ macro_rules! impl_numtoa_const_for_base_on_type {
     $required_space_constant_name:ident,
     $needed_space_bytes:expr
 ) => {
-
         pub const $required_space_constant_name: usize = $needed_space_bytes;
 
         pub const fn $base_n_function_name(
             num: $type_name,
-        ) -> AsciiNumber<{Self::$required_space_constant_name}> {
+        ) -> AsciiNumber<{ Self::$required_space_constant_name }> {
             let mut string = [0_u8; Self::$required_space_constant_name];
-            let start = Self::$required_space_constant_name - $core_function_name(num, $base, &mut string).len();
+            let start = Self::$required_space_constant_name
+                - $core_function_name(num, $base, &mut string).len();
             return AsciiNumber { string, start };
         }
 
