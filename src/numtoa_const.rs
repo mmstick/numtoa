@@ -90,7 +90,8 @@ macro_rules! impl_numtoa_const_for_base_on_type {
     $core_function_name:ident,
     $base_n_function_name:ident,
     $padded_function_name:ident,
-    $needed_buffer_size:expr) => {
+    $needed_buffer_size:expr
+) => {
         pub const fn $base_n_function_name(
             num: $type_name,
         ) -> AsciiNumber<{ $needed_buffer_size }> {
