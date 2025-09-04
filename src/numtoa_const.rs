@@ -91,25 +91,22 @@ macro_rules! impl_numtoa_const_for_base_on_type {
     $base_n_function_name:ident,
     $padded_function_name:ident,
     $needed_buffer_size:expr) => {
-        impl BaseN<$base> {
-            pub const fn $base_n_function_name(
-                num: $type_name,
-            ) -> AsciiNumber<{ $needed_buffer_size }> {
-                let mut string = [0_u8; { $needed_buffer_size }];
-                let start =
-                    $needed_buffer_size - $core_function_name(num, $base, &mut string).len();
-                return AsciiNumber { string, start };
-            }
+        pub const fn $base_n_function_name(
+            num: $type_name,
+        ) -> AsciiNumber<{ $needed_buffer_size }> {
+            let mut string = [0_u8; { $needed_buffer_size }];
+            let start = $needed_buffer_size - $core_function_name(num, $base, &mut string).len();
+            return AsciiNumber { string, start };
+        }
 
-            pub const fn $padded_function_name<const LENGTH: usize>(
-                num: $type_name,
-                padding: u8,
-            ) -> AsciiNumber<LENGTH> {
-                const { assert!(LENGTH >= { $needed_buffer_size }) }
-                let mut string = [padding; LENGTH];
-                let _ = $core_function_name(num, $base, &mut string);
-                return AsciiNumber { string, start: 0 };
-            }
+        pub const fn $padded_function_name<const LENGTH: usize>(
+            num: $type_name,
+            padding: u8,
+        ) -> AsciiNumber<LENGTH> {
+            const { assert!(LENGTH >= { $needed_buffer_size }) }
+            let mut string = [padding; LENGTH];
+            let _ = $core_function_name(num, $base, &mut string);
+            return AsciiNumber { string, start: 0 };
         }
     };
 }
@@ -132,7 +129,7 @@ macro_rules! impl_numtoa_const_for_base_n {
             pub const REQUIRED_SPACE_I8: usize =
                 required_space($base_value as u128, i8::MIN.unsigned_abs() as u128, true);
             pub const REQUIRED_SPACE_I16: usize =
-                required_space($base_value as u128, i8::MIN.unsigned_abs() as u128, true);
+                required_space($base_value as u128, i16::MIN.unsigned_abs() as u128, true);
             pub const REQUIRED_SPACE_I32: usize =
                 required_space($base_value as u128, i32::MIN.unsigned_abs() as u128, true);
             pub const REQUIRED_SPACE_I64: usize =
@@ -141,103 +138,104 @@ macro_rules! impl_numtoa_const_for_base_n {
                 required_space($base_value as u128, i128::MIN.unsigned_abs() as u128, true);
             pub const REQUIRED_SPACE_ISIZE: usize =
                 required_space($base_value as u128, isize::MIN.unsigned_abs() as u128, true);
+
+            impl_numtoa_const_for_base_on_type!(
+                u8,
+                $base_value,
+                numtoa_u8,
+                u8,
+                u8_padded,
+                Self::REQUIRED_SPACE_U8
+            );
+            impl_numtoa_const_for_base_on_type!(
+                u16,
+                $base_value,
+                numtoa_u16,
+                u16,
+                u16_padded,
+                Self::REQUIRED_SPACE_U16
+            );
+            impl_numtoa_const_for_base_on_type!(
+                u32,
+                $base_value,
+                numtoa_u32,
+                u32,
+                u32_padded,
+                Self::REQUIRED_SPACE_U32
+            );
+            impl_numtoa_const_for_base_on_type!(
+                u64,
+                $base_value,
+                numtoa_u64,
+                u64,
+                u64_padded,
+                Self::REQUIRED_SPACE_U64
+            );
+            impl_numtoa_const_for_base_on_type!(
+                u128,
+                $base_value,
+                numtoa_u128,
+                u128,
+                u128_padded,
+                Self::REQUIRED_SPACE_U128
+            );
+            impl_numtoa_const_for_base_on_type!(
+                usize,
+                $base_value,
+                numtoa_usize,
+                usize,
+                usize_padded,
+                Self::REQUIRED_SPACE_USIZE
+            );
+            impl_numtoa_const_for_base_on_type!(
+                i8,
+                $base_value,
+                numtoa_i8,
+                i8,
+                i8_padded,
+                Self::REQUIRED_SPACE_I8
+            );
+            impl_numtoa_const_for_base_on_type!(
+                i16,
+                $base_value,
+                numtoa_i16,
+                i16,
+                i16_padded,
+                Self::REQUIRED_SPACE_I16
+            );
+            impl_numtoa_const_for_base_on_type!(
+                i32,
+                $base_value,
+                numtoa_i32,
+                i32,
+                i32_padded,
+                Self::REQUIRED_SPACE_I32
+            );
+            impl_numtoa_const_for_base_on_type!(
+                i64,
+                $base_value,
+                numtoa_i64,
+                i64,
+                i64_padded,
+                Self::REQUIRED_SPACE_I64
+            );
+            impl_numtoa_const_for_base_on_type!(
+                i128,
+                $base_value,
+                numtoa_i128,
+                i128,
+                i128_padded,
+                Self::REQUIRED_SPACE_I128
+            );
+            impl_numtoa_const_for_base_on_type!(
+                isize,
+                $base_value,
+                numtoa_isize,
+                isize,
+                isize_padded,
+                Self::REQUIRED_SPACE_ISIZE
+            );
         }
-        impl_numtoa_const_for_base_on_type!(
-            u8,
-            $base_value,
-            numtoa_u8,
-            u8,
-            u8_padded,
-            Self::REQUIRED_SPACE_U8
-        );
-        impl_numtoa_const_for_base_on_type!(
-            u16,
-            $base_value,
-            numtoa_u16,
-            u16,
-            u16_padded,
-            Self::REQUIRED_SPACE_U16
-        );
-        impl_numtoa_const_for_base_on_type!(
-            u32,
-            $base_value,
-            numtoa_u32,
-            u32,
-            u32_padded,
-            Self::REQUIRED_SPACE_U32
-        );
-        impl_numtoa_const_for_base_on_type!(
-            u64,
-            $base_value,
-            numtoa_u64,
-            u64,
-            u64_padded,
-            Self::REQUIRED_SPACE_U64
-        );
-        impl_numtoa_const_for_base_on_type!(
-            u128,
-            $base_value,
-            numtoa_u128,
-            u128,
-            u128_padded,
-            Self::REQUIRED_SPACE_U128
-        );
-        impl_numtoa_const_for_base_on_type!(
-            usize,
-            $base_value,
-            numtoa_usize,
-            usize,
-            usize_padded,
-            Self::REQUIRED_SPACE_USIZE
-        );
-        impl_numtoa_const_for_base_on_type!(
-            i8,
-            $base_value,
-            numtoa_i8,
-            i8,
-            i8_padded,
-            Self::REQUIRED_SPACE_I8
-        );
-        impl_numtoa_const_for_base_on_type!(
-            i16,
-            $base_value,
-            numtoa_i16,
-            i16,
-            i16_padded,
-            Self::REQUIRED_SPACE_I16
-        );
-        impl_numtoa_const_for_base_on_type!(
-            i32,
-            $base_value,
-            numtoa_i32,
-            i32,
-            i32_padded,
-            Self::REQUIRED_SPACE_I32
-        );
-        impl_numtoa_const_for_base_on_type!(
-            i64,
-            $base_value,
-            numtoa_i64,
-            i64,
-            i64_padded,
-            Self::REQUIRED_SPACE_I64
-        );
-        impl_numtoa_const_for_base_on_type!(
-            i128,
-            $base_value,
-            numtoa_i128,
-            i128,
-            i128_padded,
-            Self::REQUIRED_SPACE_I128
-        );
-        impl_numtoa_const_for_base_on_type!(
-            isize,
-            $base_value,
-            numtoa_isize,
-            isize,
-            isize_padded,
-            Self::REQUIRED_SPACE_ISIZE
-        );
     };
 }
 
