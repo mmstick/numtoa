@@ -1,6 +1,8 @@
 /// returns the number of bytes required for a base N number conversion
 pub const fn required_space(base: u128, number: u128, negative: bool) -> usize {
-    assert!(base > 0);
+    if base == 0 {
+        return 0;
+    }
     if number == 0 {
         return 1 + (negative as usize);
     }
