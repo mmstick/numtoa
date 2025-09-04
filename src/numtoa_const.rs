@@ -92,8 +92,10 @@ macro_rules! impl_numtoa_const_for_base_on_type {
     $required_space_constant_name:ident,
     $needed_space_bytes:expr
 ) => {
+        #[doc = concat!("the number of space in bytes required to convert an arbitrary [", stringify!($type_name), "] to its ASCII representation in base ", $base)]
         pub const $required_space_constant_name: usize = $needed_space_bytes;
 
+        #[doc = concat!("converts the specified [", stringify!($type_name), "] to its ASCII representation in base ", $base)]
         pub const fn $base_n_function_name(
             num: $type_name,
         ) -> AsciiNumber<{ Self::$required_space_constant_name }> {
@@ -103,6 +105,7 @@ macro_rules! impl_numtoa_const_for_base_on_type {
             return AsciiNumber { string, start };
         }
 
+        #[doc = concat!("converts the specified [", stringify!($type_name), "] to its ASCII representation in base ", $base, ", padded to the specified length with the specified byte")]
         pub const fn $padded_function_name<const LENGTH: usize>(
             num: $type_name,
             padding: u8,
