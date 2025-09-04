@@ -105,7 +105,7 @@ macro_rules! impl_numtoa_const_for_base_on_type {
             return AsciiNumber { string, start };
         }
 
-        #[doc = concat!("converts the specified [", stringify!($type_name), "] to its ASCII representation in base ", $base, ", padded to the specified length with the specified byte")]
+        #[doc = concat!("converts the specified [", stringify!($type_name), "] to its ASCII representation in base ", $base, ", left-padded to the specified length with the provided byte")]
         pub const fn $padded_function_name<const LENGTH: usize>(
             num: $type_name,
             padding: u8,
