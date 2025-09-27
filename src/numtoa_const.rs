@@ -82,6 +82,14 @@ impl<const N: usize> Debug for AsciiNumber<N> {
     }
 }
 
+const fn const_max(a: usize, b: usize) -> usize {
+    if a > b {
+        a
+    } else {
+        b
+    }
+}
+
 macro_rules! impl_numtoa_const_for_base_on_type {
     (
     $type_name:ty,
@@ -89,6 +97,7 @@ macro_rules! impl_numtoa_const_for_base_on_type {
     $core_function_name:ident,
     $base_n_function_name:ident,
     $padded_function_name:ident,
+    $filled_function_name:ident,
     $required_space_constant_name:ident,
     $needed_space_bytes:expr
 ) => {
@@ -115,6 +124,18 @@ macro_rules! impl_numtoa_const_for_base_on_type {
             let _ = $core_function_name(num, $base, &mut string);
             return AsciiNumber { string, start: 0 };
         }
+
+        #[doc = concat!("converts the specified [", stringify!($type_name), "] to its ASCII representation in base ", $base, ", left-filled to the specified length with the provided byte")]
+        pub const fn $filled_function_name<const LENGTH: usize>(
+            num: $type_name,
+            fill: u8,
+        ) -> AsciiNumber<{ Self::$required_space_constant_name }> {
+            const { assert!(LENGTH < { Self::$required_space_constant_name }) }
+            let mut string = [fill; Self::$required_space_constant_name];
+            let start = Self::$required_space_constant_name
+                - const_max(LENGTH, $core_function_name(num, $base, &mut string).len());
+            return AsciiNumber { string, start };
+        }
     };
 }
 
@@ -127,6 +148,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 numtoa_u8,
                 u8,
                 u8_padded,
+                u8_filled,
                 REQUIRED_SPACE_U8,
                 required_space($base_value as u128, u8::MAX as u128, false)
             );
@@ -136,6 +158,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 numtoa_u16,
                 u16,
                 u16_padded,
+                u16_filled,
                 REQUIRED_SPACE_U16,
                 required_space($base_value as u128, u16::MAX as u128, false)
             );
@@ -145,6 +168,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 numtoa_u32,
                 u32,
                 u32_padded,
+                u32_filled,
                 REQUIRED_SPACE_U32,
                 required_space($base_value as u128, u32::MAX as u128, false)
             );
@@ -154,6 +178,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 numtoa_u64,
                 u64,
                 u64_padded,
+                u64_filled,
                 REQUIRED_SPACE_U64,
                 required_space($base_value as u128, u64::MAX as u128, false)
             );
@@ -163,6 +188,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 numtoa_u128,
                 u128,
                 u128_padded,
+                u128_filled,
                 REQUIRED_SPACE_U128,
                 required_space($base_value as u128, u128::MAX as u128, false)
             );
@@ -172,6 +198,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 numtoa_usize,
                 usize,
                 usize_padded,
+                usize_filled,
                 REQUIRED_SPACE_USIZE,
                 required_space($base_value as u128, usize::MAX as u128, false)
             );
@@ -181,6 +208,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 numtoa_i8,
                 i8,
                 i8_padded,
+                i8_filled,
                 REQUIRED_SPACE_I8,
                 required_space($base_value as u128, i8::MIN.unsigned_abs() as u128, true)
             );
@@ -190,6 +218,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 numtoa_i16,
                 i16,
                 i16_padded,
+                i16_filled,
                 REQUIRED_SPACE_I16,
                 required_space($base_value as u128, i16::MIN.unsigned_abs() as u128, true)
             );
@@ -199,6 +228,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 numtoa_i32,
                 i32,
                 i32_padded,
+                i32_filled,
                 REQUIRED_SPACE_I32,
                 required_space($base_value as u128, i32::MIN.unsigned_abs() as u128, true)
             );
@@ -208,6 +238,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 numtoa_i64,
                 i64,
                 i64_padded,
+                i64_filled,
                 REQUIRED_SPACE_I64,
                 required_space($base_value as u128, i64::MIN.unsigned_abs() as u128, true)
             );
@@ -217,6 +248,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 numtoa_i128,
                 i128,
                 i128_padded,
+                i128_filled,
                 REQUIRED_SPACE_I128,
                 required_space($base_value as u128, i128::MIN.unsigned_abs() as u128, true)
             );
@@ -226,6 +258,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 numtoa_isize,
                 isize,
                 isize_padded,
+                isize_filled,
                 REQUIRED_SPACE_ISIZE,
                 required_space($base_value as u128, isize::MIN.unsigned_abs() as u128, true)
             );
@@ -273,6 +306,16 @@ fn str_convenience_base10_padded() {
 }
 
 #[test]
+fn str_convenience_base10_filled() {
+    assert_eq!("12", BaseN::<10>::i32_filled::<1>(12, b'0').as_str());
+    assert_eq!("00012", BaseN::<10>::i32_filled::<5>(12, b'0').as_str());
+    assert_eq!(
+        "123456",
+        BaseN::<10>::i32_filled::<5>(123456, b'0').as_str()
+    );
+}
+
+#[test]
 fn str_convenience_base16() {
     assert_eq!("3E87B", BaseN::<16>::i32(256123).as_str());
 }
@@ -286,6 +329,16 @@ fn str_convenience_base16_padded() {
 }
 
 #[test]
+fn str_convenience_base16_filled() {
+    assert_eq!("7B", BaseN::<16>::i32_filled::<1>(123, b'0').as_str());
+    assert_eq!("0007B", BaseN::<16>::i32_filled::<5>(123, b'0').as_str());
+    assert_eq!(
+        "BC614E",
+        BaseN::<16>::i32_filled::<5>(12345678, b'0').as_str()
+    );
+}
+
+#[test]
 fn str_convenience_wacky_padding() {
     assert_eq!(
         "##############-3E87B",
@@ -295,6 +348,16 @@ fn str_convenience_wacky_padding() {
         "@@@@@@@@@@@-111",
         BaseN::<10>::i8_padded::<15>(-111, b'@').as_str()
     );
+}
+
+#[test]
+fn str_convenience_wacky_filling() {
+    assert_eq!(
+        "##-3E87B",
+        BaseN::<16>::i32_filled::<8>(-256123, b'#').as_str()
+    );
+    assert_eq!("@-3", BaseN::<10>::i8_filled::<3>(-3, b'@').as_str());
+    assert_eq!("-11", BaseN::<10>::i8_filled::<3>(-11, b'@').as_str());
 }
 
 #[test]
