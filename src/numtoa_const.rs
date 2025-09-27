@@ -130,7 +130,7 @@ macro_rules! impl_numtoa_const_for_base_on_type {
             num: $type_name,
             fill: u8,
         ) -> AsciiNumber<{ Self::$required_space_constant_name }> {
-            const { assert!(LENGTH < { Self::$required_space_constant_name }) }
+            const { assert!(LENGTH <= { Self::$required_space_constant_name }) }
             let mut string = [fill; Self::$required_space_constant_name];
             let start = Self::$required_space_constant_name
                 - const_max(LENGTH, $core_function_name(num, $base, &mut string).len());
