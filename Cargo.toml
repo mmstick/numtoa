@@ -2,7 +2,7 @@
 name = "numtoa"
 version = "1.0.0-alpha1"
 authors = ["Michael Aaron Murphy <mmstickman@gmail.com>"]
-edition = "2015"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 documentation = "https://docs.rs/numtoa"
 description = "Convert numbers into stack-allocated byte arrays"
