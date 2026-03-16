@@ -150,7 +150,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 u8_padded,
                 u8_filled,
                 REQUIRED_SPACE_U8,
-                required_space($base_value as u128, u8::MAX as u128, false)
+                required_space($base_value as u128, u8::MAX as u128, false).expect("valid base")
             );
             impl_numtoa_const_for_base_on_type!(
                 u16,
@@ -160,7 +160,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 u16_padded,
                 u16_filled,
                 REQUIRED_SPACE_U16,
-                required_space($base_value as u128, u16::MAX as u128, false)
+                required_space($base_value as u128, u16::MAX as u128, false).expect("valid base")
             );
             impl_numtoa_const_for_base_on_type!(
                 u32,
@@ -170,7 +170,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 u32_padded,
                 u32_filled,
                 REQUIRED_SPACE_U32,
-                required_space($base_value as u128, u32::MAX as u128, false)
+                required_space($base_value as u128, u32::MAX as u128, false).expect("valid base")
             );
             impl_numtoa_const_for_base_on_type!(
                 u64,
@@ -180,7 +180,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 u64_padded,
                 u64_filled,
                 REQUIRED_SPACE_U64,
-                required_space($base_value as u128, u64::MAX as u128, false)
+                required_space($base_value as u128, u64::MAX as u128, false).expect("valid base")
             );
             impl_numtoa_const_for_base_on_type!(
                 u128,
@@ -190,7 +190,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 u128_padded,
                 u128_filled,
                 REQUIRED_SPACE_U128,
-                required_space($base_value as u128, u128::MAX as u128, false)
+                required_space($base_value as u128, u128::MAX as u128, false).expect("valid base")
             );
             impl_numtoa_const_for_base_on_type!(
                 usize,
@@ -200,7 +200,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 usize_padded,
                 usize_filled,
                 REQUIRED_SPACE_USIZE,
-                required_space($base_value as u128, usize::MAX as u128, false)
+                required_space($base_value as u128, usize::MAX as u128, false).expect("valid base")
             );
             impl_numtoa_const_for_base_on_type!(
                 i8,
@@ -210,7 +210,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 i8_padded,
                 i8_filled,
                 REQUIRED_SPACE_I8,
-                required_space($base_value as u128, i8::MIN.unsigned_abs() as u128, true)
+                required_space($base_value as u128, i8::MIN.unsigned_abs() as u128, true).expect("valid base")
             );
             impl_numtoa_const_for_base_on_type!(
                 i16,
@@ -220,7 +220,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 i16_padded,
                 i16_filled,
                 REQUIRED_SPACE_I16,
-                required_space($base_value as u128, i16::MIN.unsigned_abs() as u128, true)
+                required_space($base_value as u128, i16::MIN.unsigned_abs() as u128, true).expect("valid base")
             );
             impl_numtoa_const_for_base_on_type!(
                 i32,
@@ -230,7 +230,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 i32_padded,
                 i32_filled,
                 REQUIRED_SPACE_I32,
-                required_space($base_value as u128, i32::MIN.unsigned_abs() as u128, true)
+                required_space($base_value as u128, i32::MIN.unsigned_abs() as u128, true).expect("valid base")
             );
             impl_numtoa_const_for_base_on_type!(
                 i64,
@@ -240,7 +240,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 i64_padded,
                 i64_filled,
                 REQUIRED_SPACE_I64,
-                required_space($base_value as u128, i64::MIN.unsigned_abs() as u128, true)
+                required_space($base_value as u128, i64::MIN.unsigned_abs() as u128, true).expect("valid base")
             );
             impl_numtoa_const_for_base_on_type!(
                 i128,
@@ -250,7 +250,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 i128_padded,
                 i128_filled,
                 REQUIRED_SPACE_I128,
-                required_space($base_value as u128, i128::MIN.unsigned_abs() as u128, true)
+                required_space($base_value as u128, i128::MIN.unsigned_abs() as u128, true).expect("valid base")
             );
             impl_numtoa_const_for_base_on_type!(
                 isize,
@@ -260,7 +260,7 @@ macro_rules! impl_numtoa_const_for_base_n {
                 isize_padded,
                 isize_filled,
                 REQUIRED_SPACE_ISIZE,
-                required_space($base_value as u128, isize::MIN.unsigned_abs() as u128, true)
+                required_space($base_value as u128, isize::MIN.unsigned_abs() as u128, true).expect("valid base")
             );
         }
     };

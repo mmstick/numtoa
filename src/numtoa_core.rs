@@ -1,18 +1,12 @@
-/// returns the number of bytes required for a base N number conversion
-pub const fn required_space(base: u128, number: u128, negative: bool) -> usize {
-    if base == 0 {
-        return 0;
+/// returns the number of bytes required for a base N number conversion, or none if the specified base is less than 2
+pub const fn required_space(base: u128, number: u128, negative: bool) -> Option<usize> {
+    if base < 2 {
+        return None;
     }
     if number == 0 {
-        return 1 + (negative as usize);
+        return Some(1);
     }
-    let mut number_bytes_required = 0;
-    let mut n = number;
-    while n > 0 {
-        n /= base as u128;
-        number_bytes_required += 1;
-    }
-    number_bytes_required + (negative as usize)
+    Some(number.ilog(base) as usize + 1 + negative as usize)
 }
 
 // A lookup table to prevent the need for conditional branching
@@ -86,7 +80,7 @@ macro_rules! impl_unsigned_numtoa_for {
                     "unsupported base"
                 );
                 debug_assert!(
-                    string.len() >= required_space(base as u128, <$type_name>::MAX as u128, false)
+                    string.len() >= required_space(base as u128, <$type_name>::MAX as u128, false).expect("valid base")
                 );
             }
 
@@ -143,7 +137,7 @@ macro_rules! impl_signed_numtoa_for {
                             base as u128,
                             <$type_name>::MIN.unsigned_abs() as u128,
                             true
-                        )
+                        ).expect("valid base")
                 );
             }
 
@@ -214,7 +208,7 @@ pub const fn numtoa_i8(mut num: i8, base: i8, string: &mut [u8]) -> &[u8] {
             "unsupported base"
         );
         debug_assert!(
-            string.len() >= required_space(base as u128, i8::MIN.unsigned_abs() as u128, true)
+            string.len() >= required_space(base as u128, i8::MIN.unsigned_abs() as u128, true).expect("valid base")
         );
     }
 
@@ -278,7 +272,7 @@ pub const fn numtoa_u8(mut num: u8, base: u8, string: &mut [u8]) -> &[u8] {
             base > 1 && base as u128 <= MAX_SUPPORTED_BASE,
             "unsupported base"
         );
-        debug_assert!(string.len() >= required_space(base as u128, u8::MAX as u128, false));
+        debug_assert!(string.len() >= required_space(base as u128, u8::MAX as u128, false).expect("valid base"));
     }
 
     let mut index = string.len() - 1;
@@ -337,54 +331,73 @@ mod core_test {
     ) {
         assert_eq!(
             expected_space_u8,
-            required_space(base, u8::MAX as u128, false)
+            required_space(base, u8::MAX as u128, false).expect("valid base")
         );
         assert_eq!(
             expected_space_u16,
-            required_space(base, u16::MAX as u128, false)
+            required_space(base, u16::MAX as u128, false).expect("valid base")
         );
         assert_eq!(
             expected_space_u32,
-            required_space(base, u32::MAX as u128, false)
+            required_space(base, u32::MAX as u128, false).expect("valid base")
         );
         assert_eq!(
             expected_space_u64,
-            required_space(base, u64::MAX as u128, false)
+            required_space(base, u64::MAX as u128, false).expect("valid base")
         );
         assert_eq!(
             expected_space_u128,
-            required_space(base, u128::MAX as u128, false)
+            required_space(base, u128::MAX as u128, false).expect("valid base")
         );
         assert_eq!(
             expected_space_i8,
-            required_space(base, i8::MIN.unsigned_abs() as u128, true)
+            required_space(base, i8::MIN.unsigned_abs() as u128, true).expect("valid base")
         );
         assert_eq!(
             expected_space_i16,
-            required_space(base, i16::MIN.unsigned_abs() as u128, true)
+            required_space(base, i16::MIN.unsigned_abs() as u128, true).expect("valid base")
         );
         assert_eq!(
             expected_space_i32,
-            required_space(base, i32::MIN.unsigned_abs() as u128, true)
+            required_space(base, i32::MIN.unsigned_abs() as u128, true).expect("valid base")
         );
         assert_eq!(
             expected_space_i64,
-            required_space(base, i64::MIN.unsigned_abs() as u128, true)
+            required_space(base, i64::MIN.unsigned_abs() as u128, true).expect("valid base")
         );
         assert_eq!(
             expected_space_i128,
-            required_space(base, i128::MIN.unsigned_abs() as u128, true)
+            required_space(base, i128::MIN.unsigned_abs() as u128, true).expect("valid base")
         );
     }
 
     #[test]
     fn sanity_check_required_size() {
-        // test zero
-        assert_eq!(1, required_space(2, 0, false));
-        // test positive one
-        assert_eq!(1, required_space(2, 1, false));
-        // test negative one
-        assert_eq!(2, required_space(2, 1, true));
+        // test zero base 2
+        assert_eq!(Some(1), required_space(2, 0, false));
+        // test (possibly?) negative zero base 2
+        assert_eq!(Some(1), required_space(2, 0, true));
+        // test zero base 1
+        assert_eq!(None, required_space(1, 0, false));
+        // test (possibly?) negative zero base 1
+        assert_eq!(None, required_space(1, 0, true));
+        // test zero base 0
+        assert_eq!(None, required_space(0, 0, false));
+        // test (possibly?) negative zero base 0
+        assert_eq!(None, required_space(0, 0, true));
+
+        // test positive one base 2
+        assert_eq!(Some(1), required_space(2, 1, false));
+        // test negative one base 2
+        assert_eq!(Some(2), required_space(2, 1, true));
+        // test positive one base 0
+        assert_eq!(None, required_space(0, 1, false));
+        // test negative one base 0
+        assert_eq!(None, required_space(0, 1, true));
+        // test positive one base 1
+        assert_eq!(None, required_space(1, 1, false));
+        // test negative one base 1
+        assert_eq!(None, required_space(1, 1, true));
 
         verify_required_sizes_for_base(2, 8, 16, 32, 64, 128, 9, 17, 33, 65, 129);
 
