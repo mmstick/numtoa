@@ -1,4 +1,4 @@
-/// returns the number of bytes required for a base N number conversion, or none if the specified base is less than 2
+/// returns the number of bytes required for a base N number conversion, or [None] if the specified base is less than 2
 pub const fn required_space(base: u128, number: u128, negative: bool) -> Option<usize> {
     if base < 2 {
         return None;
