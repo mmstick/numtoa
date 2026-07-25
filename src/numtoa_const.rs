@@ -30,7 +30,7 @@ impl<const N: usize> AsciiNumber<N> {
 
     pub const ONE: AsciiNumber<N> = {
         let mut string = [0_u8; N];
-        string[N - 1] = b'0';
+        string[N - 1] = b'1';
         let start = N - 1;
         AsciiNumber { string, start }
     };
@@ -281,6 +281,12 @@ impl_numtoa_const_for_base_n!(13);
 impl_numtoa_const_for_base_n!(14);
 impl_numtoa_const_for_base_n!(15);
 impl_numtoa_const_for_base_n!(16);
+
+#[test]
+fn ascii_number_constants() {
+    assert_eq!("0", AsciiNumber::<4>::ZERO.as_str());
+    assert_eq!("1", AsciiNumber::<4>::ONE.as_str());
+}
 
 #[test]
 fn str_convenience_base2() {
