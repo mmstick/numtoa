@@ -7,70 +7,58 @@
 //! your choice. Therefore, if you want a binary representation, set the base to 2. If you want hexadecimal, set the
 //! base to 16.
 //!
-//! # Convenience Example
+//! # `NumToA` Trait Example
 //!
 //! ```
 //! use numtoa::NumToA;
 //!
-//! let mut buf = [0u8; 20];
-//! let mut string = String::new();
-//!
-//! for number in (1..10) {
-//!     string.push_str(number.numtoa_str(10, &mut buf));
-//!     string.push('\n');
-//! }
-//!
-//! println!("{}", string);
-//! ```
-//!
-//! ## Base 10 Example
-//! ```
-//! use numtoa::NumToA;
-//! use std::io::{self, Write};
-//!
-//! let stdout = io::stdout();
-//! let mut stdout = stdout.lock();
 //! let mut buffer = [0u8; 20];
+//! assert_eq!(162392_u32.numtoa_str(10, &mut buffer), "162392");
+//! assert_eq!((-6235_i32).numtoa(10, &mut buffer), b"-6235");
+//! assert_eq!(i8::MIN.numtoa(10, &mut buffer), b"-128");
+//! ```
 //!
-//! let number: u32 = 162392;
-//! let _ = stdout.write(number.numtoa(10, &mut buffer));
-//! let _ = stdout.write(b"\n");
-//! assert_eq!(number.numtoa(10, &mut buffer), b"162392");
+//! The same buffer can be reused across many conversions instead of allocating one per number:
 //!
-//! let number: i32 = -6235;
-//! let _ = stdout.write(number.numtoa(10, &mut buffer));
-//! let _ = stdout.write(b"\n");
-//! assert_eq!(number.numtoa(10, &mut buffer), b"-6235");
+//! ```
+//! use numtoa::NumToA;
 //!
-//! let number: i8 = -128;
-//! let _ = stdout.write(number.numtoa(10, &mut buffer));
-//! let _ = stdout.write(b"\n");
-//! assert_eq!(number.numtoa(10, &mut buffer), b"-128");
+//! let mut buffer = [0u8; 20];
+//! let mut joined = String::new();
+//! for number in 1..=3 {
+//!     joined.push_str(number.numtoa_str(10, &mut buffer));
+//!     joined.push(',');
+//! }
+//! assert_eq!(joined, "1,2,3,");
+//! ```
 //!
-//! let number: i8 = 53;
-//! let _ = stdout.write(number.numtoa(10, &mut buffer));
-//! let _ = stdout.write(b"\n");
-//! assert_eq!(number.numtoa(10, &mut buffer), b"53");
+//! ## Const Context Example
 //!
-//! let number: i16 = -256;
-//! let _ = stdout.write(number.numtoa(10, &mut buffer));
-//! let _ = stdout.write(b"\n");
-//! assert_eq!(number.numtoa(10, &mut buffer), b"-256");
+//! The [`BaseN`] API (selecting the base via a const generic) is fully `const fn`, so conversions
+//! can run entirely at compile time — as shown below, `HEX` is computed by the compiler, not at
+//! runtime. It returns an [`AsciiNumber`], whose buffer is sized automatically to the minimum
+//! space required for the given type and base. [`AsciiNumber`] implements `Display` and
+//! `Deref<Target = str>`, so it can be used directly wherever a string is expected:
 //!
-//! let number: i16 = -32768;
-//! let _ = stdout.write(number.numtoa(10, &mut buffer));
-//! let _ = stdout.write(b"\n");
-//! assert_eq!(number.numtoa(10, &mut buffer), b"-32768");
+//! ```
+//! use numtoa::{AsciiNumber, BaseN};
 //!
-//! let number: u64 = 35320842;
-//! let _ = stdout.write(number.numtoa(10, &mut buffer));
-//! let _ = stdout.write(b"\n");
-//! assert_eq!(number.numtoa(10, &mut buffer), b"35320842");
+//! const HEX: AsciiNumber<{ BaseN::<16>::REQUIRED_SPACE_U32 }> = BaseN::<16>::u32(48879);
+//! assert_eq!(format!("0x{HEX}"), "0xBEEF"); // `Display`
+//! assert_eq!(HEX.len(), 4); // `Deref<Target = str>`
+//! ```
 //!
-//! let number: u64 = 18446744073709551615;
-//! let _ = stdout.write(number.numtoa(10, &mut buffer));
-//! let _ = stdout.write(b"\n");
-//! assert_eq!(number.numtoa(10, &mut buffer), b"18446744073709551615");
+//! `_padded` produces a fixed-width `AsciiNumber<LENGTH>`, so `LENGTH` must already be large
+//! enough to hold the type's largest possible value. `_filled` instead pads up to *at least*
+//! `LENGTH` digits but grows past it for larger numbers rather than truncating:
+//!
+//! ```
+//! use numtoa::BaseN;
+//!
+//! assert_eq!(BaseN::<10>::i32_padded::<11>(42, b'0').as_str(), "00000000042");
+//!
+//! assert_eq!(BaseN::<10>::i32_filled::<5>(42, b'0').as_str(), "00042");
+//! assert_eq!(BaseN::<10>::i32_filled::<5>(123456, b'0').as_str(), "123456");
 //! ```
 
 #![no_std]
